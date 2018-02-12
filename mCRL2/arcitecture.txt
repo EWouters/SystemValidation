@@ -1,0 +1,66 @@
+sort
+	Chamber = struct cI | cO | cL | cH;
+	Pressure = struct pA | pL | pH;
+	Door = struct dAI | dAO | dLI | dLO | dH;
+	Robot = struct rI | rO;
+	State = struct sO | sC;
+	Action = struct aG | aR;
+
+
+%Door_Controller = struct Door_AI | Door_AO | Door_LI | Door_LO | Door_H;
+%Chamber_Controller = struct Chamber_I | Chamber_O | Chamber_L | Chamber_H;
+%Robot_Controller = struct Robot_I | Robot_O;
+
+%map;
+
+%var;
+
+%eqn;
+
+act 
+	set_pressure: Chamber # Pressure;
+	set_door: Door # State;
+	move: Robot # Chamber # Action;
+	system_want_in;
+	system_want_out;
+	wafer_in;
+	wafer_out;
+	pressure_confirmed: Chamber;
+	door_confirmed: Door;
+	robot_confirmed: Robot;
+
+% We can try to program this anti-chronological, meaning we start with the action/process to remove a wafer, then work backwards
+%proc P = move . P;
+proc Door_Controller(door:Door,
+					 state:State) = (
+		%door_confirmed(door) .
+%		(door == dAI) -> (
+%			(state == sO) -> set_door(door, state) . Door_Controller(door, state) <>
+%			(state == sC) -> set_door(door, state) . Door_Controller(door, state)
+%		) <>
+%		(door == dAO) -> (
+%			(state == sO) -> Door_Controller(door, state) <>
+%			(state == sC) -> Door_Controller(door, state)
+%		)
+	door_confirmed(door) |
+	set_door(door, state) .
+	Door_Controller(door, state)
+	);
+
+init Door_Controller(dAO,sO);
+%	allow(
+%		{
+%			set_pressure,
+%			set_door,
+%			move,
+%			pressure_confirmed,
+%			door_confirmed,
+%			robot_confirmed
+%		},
+%		comm(
+%			{
+%				%s_calibrate|r_calibrate -> IN_Calibrate
+%			},
+%			Door_Controller(dAO,sO)
+%		)
+%	);
