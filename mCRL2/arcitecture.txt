@@ -31,23 +31,31 @@ act
 
 % We can try to program this anti-chronological, meaning we start with the action/process to remove a wafer, then work backwards
 %proc P = move . P;
+%proc Pressure_Controller(pressures:List(Pressure)) = (
+%	pressure_confirmed(cO) . Pressure_Controller(pressures)
+%);
+
 proc Door_Controller(door:Door,
 					 state:State) = (
-		%door_confirmed(door) .
+		door_confirmed(door) | 
+%		((state == sO) -> (set_door(door, state) . Door_Controller(door, state))) +
+%		((state == sC) -> (set_door(door, state) . Door_Controller(door, state))) 
+		
+		
 %		(door == dAI) -> (
 %			(state == sO) -> set_door(door, state) . Door_Controller(door, state) <>
 %			(state == sC) -> set_door(door, state) . Door_Controller(door, state)
-%		) <>
+%		) +
 %		(door == dAO) -> (
 %			(state == sO) -> Door_Controller(door, state) <>
 %			(state == sC) -> Door_Controller(door, state)
 %		)
-	door_confirmed(door) |
-	set_door(door, state) .
-	Door_Controller(door, state)
+	set_door(door, state) . Door_Controller(door, state)
 	);
-
-init Door_Controller(dAO,sO);
+	
+% We can ommit the pH because the pressure in the High Vac Chamber is always High
+init %Pressure_Controller([pA, pA, pL, pH]);
+	Door_Controller(dAO,sO);
 %	allow(
 %		{
 %			set_pressure,
