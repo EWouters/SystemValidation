@@ -79,8 +79,7 @@ eqn
 	can_door_open(dLO, pressures) = (gp(pressures, cO) == pL) && (gp(pressures, cL) == pL);
 	can_door_open(dH,  pressures) =  gp(pressures, cL) == pH;
 
-	%is_chamber_sealed(cI, states) = (gd(states, dAI) == sC) && (gd(states, dLI) == sC);
-	is_chamber_sealed(cI, states) = true;
+	is_chamber_sealed(cI, states) = (gd(states, dAI) == sC) && (gd(states, dLI) == sC);
 	is_chamber_sealed(cO, states) = (gd(states, dAO) == sC) && (gd(states, dLO) == sC);
 	is_chamber_sealed(cL, states) = (gd(states, dLI) == sC) && (gd(states, dLO) == sC) && (gd(states, dH ) == sC);
 	is_chamber_sealed(cH, states) = (gd(states, dH ) == sC);
@@ -158,6 +157,7 @@ proc Pressure_Controller(pressures:List(Pressure), states:List(State)) = (
 					. Pressure_Controller(sp(pressures, c, p), states)
 				<>
 					s_seal_chamber(c, states)
+					. r_seal_confirmed(c, states)
 					. s_pressure_confirmed(c, sp(pressures, c, p))
 					. Pressure_Controller(sp(pressures, c, p), states)
 				)
@@ -221,7 +221,17 @@ proc Init_Controller = (
 
 proc Seal_Chamber(states:List(State)) = (
 	% We would like an array function here based on c2d.
-	%sum c:Chamber. r_seal_chamber(c) . 
+%	sum c:Chamber. 
+%	(
+%		r_seal_chamber(c, states)
+%		. sum d:c2d(c).
+%		(
+%			. s_set_door(d, sC)
+%			. r_door_confirmed(d, states)
+%		)
+%	)
+	
+	
 	(
 		r_seal_chamber(cI, states)
 		. s_set_door(dAI, sC)
