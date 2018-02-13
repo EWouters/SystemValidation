@@ -7,11 +7,19 @@ sort
 	Action = struct aG | aR;
 
 map
-	c2d: Chamber # Robot -> Door;
+	r2d: Chamber # Robot -> Door;
 	sp: List(Pressure) # Chamber # Pressure -> List(Pressure);
+	gp: List(Pressure) # Chamber -> Pressure;
 	sd: List(State) # Door # State -> List(State);
+	gd: List(State) # Door -> State;
 	sr: List(Action) # Robot # Action -> List(Action);
-
+	gr: List(Action) # Robot -> Action;
+	
+	% get list of doors connected to chamber
+	c2d: Chamber -> List(Door);
+	
+	can_door_open: Door # List(Pressure) -> Bool;
+	is_chamber_sealed: Chamber # List(State) -> Bool;
 var
 	pressures: List(Pressure);
 	pressure: Pressure;
@@ -21,20 +29,24 @@ var
 	state: State;
 
 eqn
-	c2d(cI, rI) = dAI;
-	c2d(cI, rO) = dAI;
-	c2d(cO, rI) = dAO;
-	c2d(cO, rO) = dAO;
-	c2d(cL, rI) = dLI;
-	c2d(cL, rO) = dLO;
-	c2d(cH, rI) = dH;
-	c2d(cH, rO) = dH;
+	r2d(cI, rI) = dAI;
+	r2d(cI, rO) = dAI;
+	r2d(cO, rI) = dAO;
+	r2d(cO, rO) = dAO;
+	r2d(cL, rI) = dLI;
+	r2d(cL, rO) = dLO;
+	r2d(cH, rI) = dH;
+	r2d(cH, rO) = dH;
 	
 	% Dictionary for Chamber to list of Pressures
 	sp(pressures, cI, pressure) = [pressure] ++ tail(pressures);
 	sp(pressures, cO, pressure) = [head(pressures), pressure] ++ tail(tail(pressures));
 	sp(pressures, cI, pressure) = rtail(rtail(pressures)) ++ [pressure, rhead(pressures)];
 	sp(pressures, cH, pressure) = rtail(pressures) ++ [pressure];
+	gp(pressures, cI) = head(pressures);
+	gp(pressures, cO) = head(tail(pressures));
+	gp(pressures, cI) = rhead(rtail(pressures));
+	gp(pressures, cH) = rhead(pressures);
 	
 	% Dictionary for Door to list of States
 	sd(states, dAI, state) = [state] ++ tail(states);
@@ -42,15 +54,49 @@ eqn
 	sd(states, dLI, state) = rtail(rtail(rtail(states))) ++ [state] ++ tail(tail(tail(states)));
 	sd(states, dLO, state) = rtail(rtail(states)) ++ [state, rhead(states)];
 	sd(states, dH,  state) = rtail(states) ++ [state];
-	
+	gd(states, dAI) = head(states);
+	gd(states, dAO) = head(tail(states));
+	gd(states, dLI) = head(tail(tail(states)));
+	gd(states, dLO) = rhead(rtail(states));
+	gd(states, dH ) = rhead(states);
+
 	% Dictionary for Robot to list of Actions
 	sr(actions, rI, action) = [action] ++ tail(actions);
 	sr(actions, rO, action) = [head(actions), action, rhead(actions)];
 	sr(actions, rT, action) = rtail(actions) ++ [action];
-	
-	
+	gr(actions, rI) = head(actions);
+	gr(actions, rO) = head(tail(actions));
+	gr(actions, rT) = rhead(actions);
+
+	c2d(cI) = [dAI, dLI];
+	c2d(cO) = [dAO, dLO];
+	c2d(cL) = [dLI, dLO, dH];
+	c2d(cH) = [dH];
+
+	can_door_open(dAI, pressures) = (gp(pressures, cI) == pA);
+	can_door_open(dAO, pressures) = (gp(pressures, cO) == pA);
+	can_door_open(dLI, pressures) = (gp(pressures, cI) == pL) && (gp(pressures, cL) == pL);
+	can_door_open(dLO, pressures) = (gp(pressures, cO) == pL) && (gp(pressures, cL) == pL);
+	can_door_open(dH,  pressures) =  gp(pressures, cL) == pH;
+
+	%is_chamber_sealed(cI, states) = (gd(states, dAI) == sC) && (gd(states, dLI) == sC);
+	is_chamber_sealed(cI, states) = true;
+	is_chamber_sealed(cO, states) = (gd(states, dAO) == sC) && (gd(states, dLO) == sC);
+	is_chamber_sealed(cL, states) = (gd(states, dLI) == sC) && (gd(states, dLO) == sC) && (gd(states, dH ) == sC);
+	is_chamber_sealed(cH, states) = (gd(states, dH ) == sC);
+
+
 act
 	tray_empty;
+	nop;
+	
+	s_seal_confirmed: Chamber # List(State);
+	r_seal_confirmed: Chamber # List(State);
+	c_seal_confirmed: Chamber # List(State);
+	
+	s_seal_chamber: Chamber # List(State);
+	r_seal_chamber: Chamber # List(State);
+	c_seal_chamber: Chamber # List(State);
 
 	% Send
 	s_set_pressure: Chamber # Pressure;
@@ -95,113 +141,56 @@ act
 
 
 % We can omit the pH because the pressure in the High Vacuum Chamber is always High
-proc Pressure_Controller(pressures:List(Pressure), doors:List(State)) = (
-	% Confirm cI for pressures pA and pL
-	r_set_pressure(cI, pA)
-	. s_pressure_confirmed(cI, pressures)
-	. Pressure_Controller(sp(pressures, cI, pA), doors)
-	+
-	r_set_pressure(cI, pL)
-	. s_pressure_confirmed(cI, pressures)
-	. Pressure_Controller(sp(pressures, cI, pL), doors)
-	
-	+
-	% Confirm cO for pressures pA and pL
-	r_set_pressure(cO, pA)
-	. s_pressure_confirmed(cO, pressures)
-	. Pressure_Controller(sp(pressures, cO, pA), doors)
-	+
-	r_set_pressure(cO, pL)
-	. s_pressure_confirmed(cO, pressures)
-	. Pressure_Controller(sp(pressures, cO, pL), doors)
-	
-	+
-	% Confirm cL for pressures pL and pH
-	r_set_pressure(cL, pL)
-	. s_pressure_confirmed(cL, pressures)
-	. Pressure_Controller(sp(pressures, cL, pL), doors)
-	+
-	r_set_pressure(cL, pH)
-	. s_pressure_confirmed(cL, pressures)
-	. Pressure_Controller(sp(pressures, cL, pH), doors)
-	
-	+
-	% Confirm cH for pressure pH
-	r_set_pressure(cH, pH)
-	. s_pressure_confirmed(cH, pressures)
-	. Pressure_Controller(sp(pressures, cH, pH), doors)
+proc Pressure_Controller(pressures:List(Pressure), states:List(State)) = (
+%	if p == this p -> confirm
+%	elseif doors of this room are closed -> confirm and update pressures
+%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
+
+	sum p:Pressure.
+	(
+		sum c:Chamber.
+		(
+			(r_set_pressure(c, p)
+			. (p == gp(pressures, c)) -> s_pressure_confirmed(c, sp(pressures, c, p))
+				. Pressure_Controller(pressures, states)
+			<>
+				((is_chamber_sealed(c, states)) -> s_pressure_confirmed(c, sp(pressures, c, p))
+					. Pressure_Controller(sp(pressures, c, p), states)
+				<>
+					s_seal_chamber(c, states)
+					. s_pressure_confirmed(c, sp(pressures, c, p))
+					. Pressure_Controller(sp(pressures, c, p), states)
+				)
+			)
+		)
+	)
 );
 
 proc Door_Controller(states:List(State), pressures:List(Pressure)) = (
-
-
-
-
-
-
-
-
-
-
-
-	r_set_door(dAI, sO) . s_door_confirmed(dAI, states) . Door_Controller(states, pressures)
-%	s_door_confirmed(door, states) . Door_Controller(states, pressures)
-%	sum a:Action. (sum r:Robot. (sum c:Chamber. (r_move(r, c, a) . Door_Controller(states, pressures))))
-%	s_door_confirmed(dAO, states) . r_move(rI, cI, aR) . Door_Controller(states, pressures)
+%	if door is in requested state -> confirm
+%	elseif door open -> close door, confirm
+%	elseif pressure is correct -> open door, confirm
+%	else -> set pressure, wait for confirm of pressure, open door, confirm
+	nop
 );
 
 proc Robot_Controller(actions:List(Action), states:List(State)) = (
-	% Eating wafers
-	r_wafer_in
-	. s_move(rT, cI, aR)
-	. s_set_door(dAI, sO)
-	. r_door_confirmed(dAI, states)
-	. s_move_confirmed(rT, states)
-	. Robot_Controller(sr(actions, rT, aR), states)
-	+
-	% Move wafer from input chamber to low vac chamber
-	r_move(rT, cI, aR)
-	. r_move_confirmed(rT, states)
-	. s_move(rI, cI, aG)
-	. s_set_door(dLI, sO)
-	. r_door_confirmed(dLI, states)
-	. s_move_confirmed(rI, states)
-	. Robot_Controller(sr(actions, rI, aG), states)
-	+
-	% Spewing wafers
-	r_move(rO, cO, aR)
-	. r_move_confirmed(rO, states)
-	. s_move(rT, cO, aG)
-	. s_set_door(dAO, sO)
-	. r_door_confirmed(dAO, states)
-	. s_move_confirmed(rT, states)
-	. s_wafer_out
-	. Robot_Controller(sr(actions, rT, aG), states)
-	
-%	sum a:Action. (sum r:Robot. (sum c:Chamber. (
-%		r_move(r, c, a) . 
-%		(
-%			(a == aG) ->
-%			(
-%				(c == cI) -> s_set_pressure(cI, pL) <>
-%				(c == cH) -> s_set_pressure(cL, pH)
-%			) <>
-%			(a == aR) ->
-%			(
-%				(c == cH) -> s_set_pressure(cL, pH) <>
-%				(c == cO) -> s_set_pressure(cO, pA)
-%			)
-%		) .
-%		%s_open door . 
-%		Robot_Controller(robots, r), states)))
-	
-	%Robot_Controller(robots, states)
-	
-	
-	%s_move(rI,cI,aR) . Robot_Controller(robots, robot)
+%	if robot unoccupied ->
+%		if door open -> confirm
+%		else -> set_door open, wait for confirmation of door, confirm move
+%	else break wafer
+	nop
 );
 
 proc Transport_Controller(numWafersIn, numWafersOut:Int) = (
+%	if cI is empty -> wafer_in
+%	else -> move, wait for confirm, wafer_in
+% +
+%	if cO is not empty -> move, wait for confirm, wafer_out
+
+
+
+
 	((numWafersIn >= 1) ->
 		r_move(rI, cI, aG)
 %		. r_move_confirmed(rI, states)
@@ -223,18 +212,46 @@ proc Transport_Controller(numWafersIn, numWafersOut:Int) = (
 );
 
 proc Test_Controller = (
-%	r_move(rT, cI, aR)
-%	. r_move_confirmed(rT, states)	
-	r_move(rI, cI, aG)
-	. r_set_door(dLI, sO)
-	. s_move(rT, cO, aG)
-%	. s_move_confirmed(rT, states)
-	. s_wafer_out
-	. Test_Controller
+	nop
 );
 
 proc Init_Controller = (
 	s_wafer_in
+);
+
+proc Seal_Chamber(states:List(State)) = (
+	% We would like an array function here based on c2d.
+	%sum c:Chamber. r_seal_chamber(c) . 
+	(
+		r_seal_chamber(cI, states)
+		. s_set_door(dAI, sC)
+		. r_door_confirmed(dAI, states)
+		. s_set_door(dLI, sC)
+		. r_door_confirmed(dLI, states)
+		. s_seal_confirmed(cI, states)
+		+
+		r_seal_chamber(cO, states)
+		. s_set_door(dAO, sC)
+		. r_door_confirmed(dAO, states)
+		. s_set_door(dLO, sC)
+		. r_door_confirmed(dLO, states)
+		. s_seal_confirmed(cO, states)
+		+
+		r_seal_chamber(cL, states)
+		. s_set_door(dLI, sC)
+		. r_door_confirmed(dLI, states)
+		. s_set_door(dLO, sC)
+		. r_door_confirmed(dLO, states)
+		. s_set_door(dH, sC)
+		. r_door_confirmed(dH, states)
+		. s_seal_confirmed(cL, states)
+		+
+		r_seal_chamber(cH, states)
+		. s_set_door(dH, sC)
+		. r_door_confirmed(dH, states)
+		. s_seal_confirmed(cH, states)
+	)
+	. Seal_Chamber(states)
 );
 
 init
@@ -267,7 +284,11 @@ init
 			c_wafer_out,
 			c_pressure_confirmed,
 			c_door_confirmed,
-			c_move_confirmed
+			c_move_confirmed,
+			
+			
+			
+			c_seal_confirmed
 		},
 		comm(
 			{
@@ -278,9 +299,10 @@ init
 				s_wafer_out | r_wafer_out -> c_wafer_out,
 				s_pressure_confirmed | r_pressure_confirmed -> c_pressure_confirmed,
 				s_door_confirmed | r_door_confirmed -> c_door_confirmed,
-				s_move_confirmed | r_move_confirmed -> c_move_confirmed
+				s_move_confirmed | r_move_confirmed -> c_move_confirmed,
 				
 				
+				s_seal_confirmed | r_seal_confirmed -> c_seal_confirmed
 				
 				
 				
@@ -292,6 +314,9 @@ init
 			Robot_Controller([aR, aR, aR], [sC, sC, sC, sC, sC]) ||
 			Transport_Controller(3, 0) ||
 			Test_Controller ||
-			Init_Controller
+			Init_Controller ||
+			
+			
+			Seal_Chamber([sC, sC, sC, sC, sC])
 		)
 	);
