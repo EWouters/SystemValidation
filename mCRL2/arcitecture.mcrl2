@@ -2,25 +2,53 @@ sort
 	Chamber = struct cI | cO | cL | cH;
 	Pressure = struct pA | pL | pH;
 	Door = struct dAI | dAO | dLI | dLO | dH;
-	Robot = struct rI | rO;
+	Robot = struct rI | rO | rT;
 	State = struct sO | sC;
 	Action = struct aG | aR;
 
 map
 	c2d: Chamber # Robot -> Door;
+	sp: List(Pressure) # Chamber # Pressure -> List(Pressure);
+	sd: List(State) # Door # State -> List(State);
+	sr: List(Action) # Robot # Action -> List(Action);
 
-%var;
+var
+	pressures: List(Pressure);
+	pressure: Pressure;
+	actions: List(Action);
+	action: Action;
+	states: List(State);
+	state: State;
 
 eqn
-	c2d(cI,rI) = dAI;
-	c2d(cI,rO) = dAI;
-	c2d(cO,rI) = dAO;
-	c2d(cO,rO) = dAO;
-	c2d(cL,rI) = dLI;
-	c2d(cL,rO) = dLO;
-	c2d(cH,rI) = dH;
-	c2d(cH,rO) = dH;
-
+	c2d(cI, rI) = dAI;
+	c2d(cI, rO) = dAI;
+	c2d(cO, rI) = dAO;
+	c2d(cO, rO) = dAO;
+	c2d(cL, rI) = dLI;
+	c2d(cL, rO) = dLO;
+	c2d(cH, rI) = dH;
+	c2d(cH, rO) = dH;
+	
+	% Dictionary for Chamber to list of Pressures
+	sp(pressures, cI, pressure) = [pressure] ++ tail(pressures);
+	sp(pressures, cO, pressure) = [head(pressures), pressure] ++ tail(tail(pressures));
+	sp(pressures, cI, pressure) = rtail(rtail(pressures)) ++ [pressure, rhead(pressures)];
+	sp(pressures, cH, pressure) = rtail(pressures) ++ [pressure];
+	
+	% Dictionary for Door to list of States
+	sd(states, dAI, state) = [state] ++ tail(states);
+	sd(states, dAO, state) = [head(states), state] ++ tail(tail(states));
+	sd(states, dLI, state) = rtail(rtail(rtail(states))) ++ [state] ++ tail(tail(tail(states)));
+	sd(states, dLO, state) = rtail(rtail(states)) ++ [state, rhead(states)];
+	sd(states, dH,  state) = rtail(states) ++ [state];
+	
+	% Dictionary for Robot to list of Actions
+	sr(actions, rI, action) = [action] ++ tail(actions);
+	sr(actions, rO, action) = [head(actions), action, rhead(actions)];
+	sr(actions, rT, action) = rtail(actions) ++ [action];
+	
+	
 act 
 	% Send
 	s_set_pressure: Chamber # Pressure;
@@ -30,6 +58,7 @@ act
 	s_system_want_out;
 	s_wafer_in;
 	s_wafer_out;
+	s_tray_empty;
 	s_pressure_confirmed: Chamber;
 	s_door_confirmed: Door;
 	s_robot_confirmed: Robot;
@@ -42,6 +71,7 @@ act
 	r_system_want_out;
 	r_wafer_in;
 	r_wafer_out;
+	r_tray_empty;
 	r_pressure_confirmed: Chamber;
 	r_door_confirmed: Door;
 	r_robot_confirmed: Robot;
@@ -54,6 +84,7 @@ act
 	c_system_want_out;
 	c_wafer_in;
 	c_wafer_out;
+	c_tray_empty;
 	c_pressure_confirmed: Chamber;
 	c_door_confirmed: Door;
 	c_robot_confirmed: Robot;
@@ -62,9 +93,10 @@ act
 
 
 % We can omit the pH because the pressure in the High Vacuum Chamber is always High
-%proc Pressure_Controller(pressures:List(Pressure)) = (
-%	s_wafer_out . s_wafer_in . Pressure_Controller(pressures)
-%);
+proc Pressure_Controller(pressures:List(Pressure)) = (
+%	sum p:Pressure. r_set_pressure(cL,p) . s_pressure_confirmed(cL,p) . Pressure_Controller(pressures)
+	s_wafer_out . s_wafer_in . Pressure_Controller(pressures)
+);
 
 proc Door_Controller(doors:List(State),door:Door) = (
 	s_door_confirmed(door) .
@@ -96,6 +128,16 @@ proc Robot_Controller(robots:List(Action), robot:Robot) = (
 	
 	
 	%s_move(rI,cI,aR) . Robot_Controller(robots, robot)
+);
+
+proc Transport_Controller(numWafersIn, numWafersOut:Int) = (
+	((numWafersIn >= 1) ->
+		s_wafer_in . Transport_Controller(numWafersIn - 1, numWafersOut) <>
+		s_tray_empty . Transport_Controller(numWafersIn, numWafersOut)
+	) +
+	% more actions need to be added here, depending on the order of move and r_wafer_out
+	% move(rT,cO,aG) ?
+	(r_wafer_out . Transport_Controller(numWafersIn, numWafersOut + 1))
 );
 
 init
@@ -133,8 +175,9 @@ init
 			
 			
 		},
-		%Pressure_Controller([pA, pA, pL, pH]) ||
+		Pressure_Controller([pA, pA, pL, pH]) ||
 		Door_Controller([sC,sC,sC,sC,sC],dAI) ||
-		Robot_Controller([aR,aR], rI)
+		Robot_Controller([aR,aR], rI) ||
+		Transport_Controller(10, 0)
 		)
 	);
