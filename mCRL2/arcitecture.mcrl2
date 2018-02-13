@@ -1,0 +1,140 @@
+sort
+	Chamber = struct cI | cO | cL | cH;
+	Pressure = struct pA | pL | pH;
+	Door = struct dAI | dAO | dLI | dLO | dH;
+	Robot = struct rI | rO;
+	State = struct sO | sC;
+	Action = struct aG | aR;
+
+map
+	c2d: Chamber # Robot -> Door;
+
+%var;
+
+eqn
+	c2d(cI,rI) = dAI;
+	c2d(cI,rO) = dAI;
+	c2d(cO,rI) = dAO;
+	c2d(cO,rO) = dAO;
+	c2d(cL,rI) = dLI;
+	c2d(cL,rO) = dLO;
+	c2d(cH,rI) = dH;
+	c2d(cH,rO) = dH;
+
+act 
+	% Send
+	s_set_pressure: Chamber # Pressure;
+	s_set_door: Door # State;
+	s_move: Robot # Chamber # Action;
+	s_system_want_in;
+	s_system_want_out;
+	s_wafer_in;
+	s_wafer_out;
+	s_pressure_confirmed: Chamber;
+	s_door_confirmed: Door;
+	s_robot_confirmed: Robot;
+	
+	% Receive
+	r_set_pressure: Chamber # Pressure;
+	r_set_door: Door # State;
+	r_move: Robot # Chamber # Action;
+	r_system_want_in;
+	r_system_want_out;
+	r_wafer_in;
+	r_wafer_out;
+	r_pressure_confirmed: Chamber;
+	r_door_confirmed: Door;
+	r_robot_confirmed: Robot;
+	
+	% Comm
+	c_set_pressure: Chamber # Pressure;
+	c_set_door: Door # State;
+	c_move: Robot # Chamber # Action;
+	c_system_want_in;
+	c_system_want_out;
+	c_wafer_in;
+	c_wafer_out;
+	c_pressure_confirmed: Chamber;
+	c_door_confirmed: Door;
+	c_robot_confirmed: Robot;
+
+% We can try to program this anti-chronological, meaning we start with the action/process to remove a wafer, then work backwards
+
+
+% We can omit the pH because the pressure in the High Vacuum Chamber is always High
+%proc Pressure_Controller(pressures:List(Pressure)) = (
+%	s_wafer_out . s_wafer_in . Pressure_Controller(pressures)
+%);
+
+proc Door_Controller(doors:List(State),door:Door) = (
+	s_door_confirmed(door) .
+	sum a:Action. (sum r:Robot. (sum c:Chamber. (r_move(r,c,a) . Door_Controller(doors,c2d(c,r)))))
+%	s_door_confirmed(dAO) . r_move(rI,cI,aR) . Door_Controller(doors,dAO)
+);
+
+proc Robot_Controller(robots:List(Action), robot:Robot) = (
+	s_robot_confirmed(robot) .
+	
+	sum a:Action. (sum r:Robot. (sum c:Chamber. (
+		r_move(r,c,a) . 
+		(
+			(a == aG) ->
+			(
+				(c == cI) -> s_set_pressure(cI,pL) <>
+				(c == cH) -> s_set_pressure(cL,pH)
+			) <>
+			(a == aR) ->
+			(
+				(c == cH) -> s_set_pressure(cL,pH) <>
+				(c == cO) -> s_set_pressure(cO,pA)
+			)
+		) . 
+		%s_open door . 
+		Robot_Controller(robots,r))))
+	
+	%Robot_Controller(robots, robot)
+	
+	
+	%s_move(rI,cI,aR) . Robot_Controller(robots, robot)
+);
+
+init
+	allow(
+		{
+			s_set_pressure,
+			s_set_door,
+			s_move,
+			s_pressure_confirmed,
+			s_door_confirmed,
+			s_robot_confirmed,
+			
+			r_set_pressure,
+			r_set_door,
+			r_move,
+			r_pressure_confirmed,
+			r_door_confirmed,
+			r_robot_confirmed,
+			
+			c_set_pressure,
+			c_set_door,
+			c_move,
+			c_pressure_confirmed,
+			c_door_confirmed,
+			c_robot_confirmed
+		},
+		comm(
+		{
+			s_set_pressure | r_set_pressure -> c_set_pressure,
+			s_set_door | r_set_door -> c_set_door,
+			s_move | r_move -> c_move,
+			s_pressure_confirmed | r_pressure_confirmed -> c_pressure_confirmed,
+			s_door_confirmed | r_door_confirmed -> c_door_confirmed,
+			s_robot_confirmed | r_robot_confirmed -> c_robot_confirmed
+			
+			
+		},
+		%Pressure_Controller([pA, pA, pL, pH]) ||
+		Door_Controller([sC,sC,sC,sC,sC],dAI) ||
+		Robot_Controller([aR,aR], rI)
+		)
+	);
