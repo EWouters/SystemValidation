@@ -49,7 +49,9 @@ eqn
 	sr(actions, rT, action) = rtail(actions) ++ [action];
 	
 	
-act 
+act
+	tray_empty;
+
 	% Send
 	s_set_pressure: Chamber # Pressure;
 	s_set_door: Door # State;
@@ -59,9 +61,9 @@ act
 	s_wafer_in;
 	s_wafer_out;
 	s_tray_empty;
-	s_pressure_confirmed: Chamber;
-	s_door_confirmed: Door;
-	s_robot_confirmed: Robot;
+	s_pressure_confirmed: Chamber # List(Pressure);
+	s_door_confirmed: Door # List(State);
+	s_move_confirmed: Robot # List(State);
 	
 	% Receive
 	r_set_pressure: Chamber # Pressure;
@@ -72,9 +74,9 @@ act
 	r_wafer_in;
 	r_wafer_out;
 	r_tray_empty;
-	r_pressure_confirmed: Chamber;
-	r_door_confirmed: Door;
-	r_robot_confirmed: Robot;
+	r_pressure_confirmed: Chamber # List(Pressure);
+	r_door_confirmed: Door # List(State);
+	r_move_confirmed: Robot # List(State);
 	
 	% Comm
 	c_set_pressure: Chamber # Pressure;
@@ -85,46 +87,115 @@ act
 	c_wafer_in;
 	c_wafer_out;
 	c_tray_empty;
-	c_pressure_confirmed: Chamber;
-	c_door_confirmed: Door;
-	c_robot_confirmed: Robot;
+	c_pressure_confirmed: Chamber # List(Pressure);
+	c_door_confirmed: Door # List(State);
+	c_move_confirmed: Robot # List(State);
 
 % We can try to program this anti-chronological, meaning we start with the action/process to remove a wafer, then work backwards
 
 
 % We can omit the pH because the pressure in the High Vacuum Chamber is always High
-proc Pressure_Controller(pressures:List(Pressure)) = (
-%	sum p:Pressure. r_set_pressure(cL,p) . s_pressure_confirmed(cL,p) . Pressure_Controller(pressures)
-	s_wafer_out . s_wafer_in . Pressure_Controller(pressures)
+proc Pressure_Controller(pressures:List(Pressure), doors:List(State)) = (
+	% Confirm cI for pressures pA and pL
+	r_set_pressure(cI, pA)
+	. s_pressure_confirmed(cI, pressures)
+	. Pressure_Controller(sp(pressures, cI, pA), doors)
+	+
+	r_set_pressure(cI, pL)
+	. s_pressure_confirmed(cI, pressures)
+	. Pressure_Controller(sp(pressures, cI, pL), doors)
+	
+	+
+	% Confirm cO for pressures pA and pL
+	r_set_pressure(cO, pA)
+	. s_pressure_confirmed(cO, pressures)
+	. Pressure_Controller(sp(pressures, cO, pA), doors)
+	+
+	r_set_pressure(cO, pL)
+	. s_pressure_confirmed(cO, pressures)
+	. Pressure_Controller(sp(pressures, cO, pL), doors)
+	
+	+
+	% Confirm cL for pressures pL and pH
+	r_set_pressure(cL, pL)
+	. s_pressure_confirmed(cL, pressures)
+	. Pressure_Controller(sp(pressures, cL, pL), doors)
+	+
+	r_set_pressure(cL, pH)
+	. s_pressure_confirmed(cL, pressures)
+	. Pressure_Controller(sp(pressures, cL, pH), doors)
+	
+	+
+	% Confirm cH for pressure pH
+	r_set_pressure(cH, pH)
+	. s_pressure_confirmed(cH, pressures)
+	. Pressure_Controller(sp(pressures, cH, pH), doors)
 );
 
-proc Door_Controller(doors:List(State),door:Door) = (
-	s_door_confirmed(door) .
-	sum a:Action. (sum r:Robot. (sum c:Chamber. (r_move(r,c,a) . Door_Controller(doors,c2d(c,r)))))
-%	s_door_confirmed(dAO) . r_move(rI,cI,aR) . Door_Controller(doors,dAO)
+proc Door_Controller(states:List(State), pressures:List(Pressure)) = (
+
+
+
+
+
+
+
+
+
+
+
+	r_set_door(dAI, sO) . s_door_confirmed(dAI, states) . Door_Controller(states, pressures)
+%	s_door_confirmed(door, states) . Door_Controller(states, pressures)
+%	sum a:Action. (sum r:Robot. (sum c:Chamber. (r_move(r, c, a) . Door_Controller(states, pressures))))
+%	s_door_confirmed(dAO, states) . r_move(rI, cI, aR) . Door_Controller(states, pressures)
 );
 
-proc Robot_Controller(robots:List(Action), robot:Robot) = (
-	s_robot_confirmed(robot) .
+proc Robot_Controller(actions:List(Action), states:List(State)) = (
+	% Eating wafers
+	r_wafer_in
+	. s_move(rT, cI, aR)
+	. s_set_door(dAI, sO)
+	. r_door_confirmed(dAI, states)
+	. s_move_confirmed(rT, states)
+	. Robot_Controller(sr(actions, rT, aR), states)
+	+
+	% Move wafer from input chamber to low vac chamber
+	r_move(rT, cI, aR)
+	. r_move_confirmed(rT, states)
+	. s_move(rI, cI, aG)
+	. s_set_door(dLI, sO)
+	. r_door_confirmed(dLI, states)
+	. s_move_confirmed(rI, states)
+	. Robot_Controller(sr(actions, rI, aG), states)
+	+
+	% Spewing wafers
+	r_move(rO, cO, aR)
+	. r_move_confirmed(rO, states)
+	. s_move(rT, cO, aG)
+	. s_set_door(dAO, sO)
+	. r_door_confirmed(dAO, states)
+	. s_move_confirmed(rT, states)
+	. s_wafer_out
+	. Robot_Controller(sr(actions, rT, aG), states)
 	
-	sum a:Action. (sum r:Robot. (sum c:Chamber. (
-		r_move(r,c,a) . 
-		(
-			(a == aG) ->
-			(
-				(c == cI) -> s_set_pressure(cI,pL) <>
-				(c == cH) -> s_set_pressure(cL,pH)
-			) <>
-			(a == aR) ->
-			(
-				(c == cH) -> s_set_pressure(cL,pH) <>
-				(c == cO) -> s_set_pressure(cO,pA)
-			)
-		) . 
-		%s_open door . 
-		Robot_Controller(robots,r))))
+%	sum a:Action. (sum r:Robot. (sum c:Chamber. (
+%		r_move(r, c, a) . 
+%		(
+%			(a == aG) ->
+%			(
+%				(c == cI) -> s_set_pressure(cI, pL) <>
+%				(c == cH) -> s_set_pressure(cL, pH)
+%			) <>
+%			(a == aR) ->
+%			(
+%				(c == cH) -> s_set_pressure(cL, pH) <>
+%				(c == cO) -> s_set_pressure(cO, pA)
+%			)
+%		) .
+%		%s_open door . 
+%		Robot_Controller(robots, r), states)))
 	
-	%Robot_Controller(robots, robot)
+	%Robot_Controller(robots, states)
 	
 	
 	%s_move(rI,cI,aR) . Robot_Controller(robots, robot)
@@ -132,52 +203,95 @@ proc Robot_Controller(robots:List(Action), robot:Robot) = (
 
 proc Transport_Controller(numWafersIn, numWafersOut:Int) = (
 	((numWafersIn >= 1) ->
-		s_wafer_in . Transport_Controller(numWafersIn - 1, numWafersOut) <>
-		s_tray_empty . Transport_Controller(numWafersIn, numWafersOut)
-	) +
+		r_move(rI, cI, aG)
+%		. r_move_confirmed(rI, states)
+		. s_wafer_in
+		. Transport_Controller(numWafersIn - 1, numWafersOut) 
+	<>
+		tray_empty 
+		. Transport_Controller(numWafersIn, numWafersOut)
+	)
+	+
 	% more actions need to be added here, depending on the order of move and r_wafer_out
 	% move(rT,cO,aG) ?
-	(r_wafer_out . Transport_Controller(numWafersIn, numWafersOut + 1))
+	(
+		r_move(rT, cO, aG)
+%		. r_move_confirmed(rT, states)
+		. r_wafer_out 
+		. Transport_Controller(numWafersIn, numWafersOut + 1)
+	)
+);
+
+proc Test_Controller = (
+%	r_move(rT, cI, aR)
+%	. r_move_confirmed(rT, states)	
+	r_move(rI, cI, aG)
+	. r_set_door(dLI, sO)
+	. s_move(rT, cO, aG)
+%	. s_move_confirmed(rT, states)
+	. s_wafer_out
+	. Test_Controller
+);
+
+proc Init_Controller = (
+	s_wafer_in
 );
 
 init
 	allow(
 		{
-			s_set_pressure,
-			s_set_door,
-			s_move,
-			s_pressure_confirmed,
-			s_door_confirmed,
-			s_robot_confirmed,
+			tray_empty,
 			
-			r_set_pressure,
-			r_set_door,
-			r_move,
-			r_pressure_confirmed,
-			r_door_confirmed,
-			r_robot_confirmed,
+			%s_set_pressure,
+			%s_set_door,
+			%s_move,
+			%s_wafer_in,
+			%s_wafer_out,
+			%s_pressure_confirmed,
+			%s_door_confirmed,
+			%s_move_confirmed,
+			
+			%r_set_pressure,
+			%r_set_door,
+			%r_move,
+			%r_wafer_in,
+			%r_wafer_out,
+			%r_pressure_confirmed,
+			%r_door_confirmed,
+			%r_move_confirmed,
 			
 			c_set_pressure,
 			c_set_door,
 			c_move,
+			c_wafer_in,
+			c_wafer_out,
 			c_pressure_confirmed,
 			c_door_confirmed,
-			c_robot_confirmed
+			c_move_confirmed
 		},
 		comm(
-		{
-			s_set_pressure | r_set_pressure -> c_set_pressure,
-			s_set_door | r_set_door -> c_set_door,
-			s_move | r_move -> c_move,
-			s_pressure_confirmed | r_pressure_confirmed -> c_pressure_confirmed,
-			s_door_confirmed | r_door_confirmed -> c_door_confirmed,
-			s_robot_confirmed | r_robot_confirmed -> c_robot_confirmed
-			
-			
-		},
-		Pressure_Controller([pA, pA, pL, pH]) ||
-		Door_Controller([sC,sC,sC,sC,sC],dAI) ||
-		Robot_Controller([aR,aR], rI) ||
-		Transport_Controller(10, 0)
+			{
+				s_set_pressure | r_set_pressure -> c_set_pressure,
+				s_set_door | r_set_door -> c_set_door,
+				s_move | r_move -> c_move,
+				s_wafer_in | r_wafer_in -> c_wafer_in,
+				s_wafer_out | r_wafer_out -> c_wafer_out,
+				s_pressure_confirmed | r_pressure_confirmed -> c_pressure_confirmed,
+				s_door_confirmed | r_door_confirmed -> c_door_confirmed,
+				s_move_confirmed | r_move_confirmed -> c_move_confirmed
+				
+				
+				
+				
+				
+				
+				
+			},
+			Pressure_Controller([pA, pA, pL, pH], [sC, sC, sC, sC, sC]) ||
+			Door_Controller([sC, sC, sC, sC, sC], [pA, pA, pL, pH]) ||
+			Robot_Controller([aR, aR, aR], [sC, sC, sC, sC, sC]) ||
+			Transport_Controller(3, 0) ||
+			Test_Controller ||
+			Init_Controller
 		)
 	);
