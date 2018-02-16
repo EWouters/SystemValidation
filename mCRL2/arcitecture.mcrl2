@@ -231,8 +231,7 @@ proc Robot_Controller(actions:List(Action), states:List(State)) = (
 		r_move(r, c, a)
 		. ((is_robot_occupied(r, actions)) ->
 			% The robot is occupied, so self loop   NOTE: can we make the actions list global for this?
-			nop
-%			s_move(r, c, a) . Robot_Controller(actions, states)
+			s_move(r, c, a) . Robot_Controller(actions, states)
 		<>	% The robot is available
 			% Open the required door for the robot
 			s_set_door(cr2d(c, r), sO)
@@ -285,65 +284,6 @@ proc Robot_Controller(actions:List(Action), states:List(State)) = (
 			)
 		)
 	)
-		
-		
-		
-		
-		
-		
-		
-%		. ((r == rT) ->
-%		% The transport robot gets a command
-%			((c == cI) ->
-%				s_set_door(dAI, sO)
-%				. r_door_confirmed(dAI, states)
-%				. ((a == aR) ->
-%					. s_move_confirmed(r, c, a)
-%				<> % (a == aG)
-%					
-%				)
-%			<>
-%				nop
-%			)
-%		<>
-%			nop
-%		)
-
-	
-%		(
-%			(a == aG) ->
-%			(
-%				(c == cI) -> s_set_door(cI,pL) <>
-%				(c == cH) -> s_set_pressure(cL,pH)
-%			) <>
-%			(a == aR) ->
-%			(
-%				(c == cH) -> s_set_pressure(cL,pH) <>
-%				(c == cO) -> s_set_pressure(cO,pA)
-%			)
-%		) . 
-%		%s_open door . 
-%		Robot_Controller(robots,r)
-%	)
-	
-	%Robot_Controller(robots, robot)
-	
-	
-	%s_move(rI,cI,aR) . Robot_Controller(robots, robot)
-	
-%	sum r:Robot, c:Chamber, a:Action.
-%	(
-%		((r == rT && a == aR) ->
-%			r_move(rT, c, aR)
-%			. 
-%		)
-%		
-%		
-%		r_move(rT, cI, a)
-%		. ((true == true) ->
-%			nop
-%		)
-%	)
 );
 
 proc Transport_Controller(numWafersIn, numWafersOut:Int) = (
@@ -383,54 +323,6 @@ proc Init_Controller = (
 	s_wafer_in
 );
 
-%proc Seal_Chamber(states:List(State)) = (
-%	% We would like an array function here based on c2d.
-%	sum c:Chamber. 
-%	(
-%		r_seal_chamber(c, states)
-%		. sum d:Door.
-%		(
-%			((d in c2d(c)) -> 
-%				s_set_door(d, sC)
-%				. r_door_confirmed(d, states)
-%			)
-%		)
-%		. s_seal_confirmed(c, states)
-%	)
-%	
-%	
-%	(
-%		r_seal_chamber(cI, states)
-%		. s_set_door(dAI, sC)
-%		. r_door_confirmed(dAI, states)
-%		. s_set_door(dLI, sC)
-%		. r_door_confirmed(dLI, states)
-%		. s_seal_confirmed(cI, states)
-%		+
-%		r_seal_chamber(cO, states)
-%		. s_set_door(dAO, sC)
-%		. r_door_confirmed(dAO, states)
-%		. s_set_door(dLO, sC)
-%		. r_door_confirmed(dLO, states)
-%		. s_seal_confirmed(cO, states)
-%		+
-%		r_seal_chamber(cL, states)
-%		. s_set_door(dLI, sC)
-%		. r_door_confirmed(dLI, states)
-%		. s_set_door(dLO, sC)
-%		. r_door_confirmed(dLO, states)
-%		. s_set_door(dH, sC)
-%		. r_door_confirmed(dH, states)
-%		. s_seal_confirmed(cL, states)
-%		+
-%		r_seal_chamber(cH, states)
-%		. s_set_door(dH, sC)
-%		. r_door_confirmed(dH, states)
-%		. s_seal_confirmed(cH, states)
-%	)
-%	. Seal_Chamber(states)
-%);
-
 init
 	allow(
 		{
@@ -465,7 +357,6 @@ init
 			c_move_confirmed
 			
 			
-			
 		},
 		comm(
 			{
@@ -480,10 +371,6 @@ init
 				
 				
 				
-				
-				
-				
-				
 			},
 			Pressure_Controller([pA, pA, pL, pH], [sC, sC, sC, sC, sC]) ||
 			Door_Controller([sC, sC, sC, sC, sC], [pA, pA, pL, pH]) ||
@@ -492,7 +379,5 @@ init
 			Test_Controller ||
 			Init_Controller %||
 			
-			
-%			Seal_Chamber([sC, sC, sC, sC, sC])
 		)
 	);
