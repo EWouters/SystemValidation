@@ -50,16 +50,21 @@ proc
 		sum c: Chamber, p: Pressure . r_pressure_set_request(c, p) . Pressure_State_Controller(status[c -> p])
 	);
 	Pressure_Controller = (
+		%	if p == this p -> confirm
+		%	elseif doors of this room are closed -> confirm and update pressures
+		%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
 
-		r_Set_Pressure(cI,pL)
-		 . s_pressure_status_request(dLI)
-		 . sum p:Pressure . r_pressure_status_response(dLI, sO)
+    sum c: Chamber, p: Pressure .
+
+		r_Set_Pressure(c, p)
+		 . s_pressure_status_request(d)
+		 . sum p:Pressure . r_pressure_status_response(c, p)
 		  . ((p == pL)) ->
-			 s_Pressure_Confirmed(cI)
+		  	 s_Pressure_Confirmed(cI)
 			<>
-			 s_pressure_set_request(cI, sO)
-			  . s_Pressure_Controller(cI)
-			) . Pressure_Controller
+			   s_pressure_set_request(c, p)
+			    . s_Pressure_Controller(c)
+		  	) . Pressure_Controller
 	);
 
 	Door_State_Controller(status: Door -> DoorState) = (
