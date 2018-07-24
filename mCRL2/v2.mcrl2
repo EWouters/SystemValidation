@@ -2,14 +2,19 @@ sort
 			Chamber = struct cI | cO | cL | cH;
 			Pressure = struct pA | pL | pH;
 			Door = struct dAI | dAO | dLI | dLO | dH;
+			Robot = struct rI | rO | rT;
 			DoorState = struct sO | sC;
-			ChamberState = struct cE | cU | cP;
+			Action = struct aG | aR;
 	
-	%Place    = struct RI | RO | cI | cO | cL | cH | P;
 
 map
 	pressuresStart: Chamber -> Pressure;
 	doorsStart: Door -> DoorState;
+	
+	c2d: Chamber -> List(Door); % get list of doors connected to chamber
+	d2c: Door -> List(Chamber); % get list of chambers connected to door
+	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
+	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
 	
 
 var
@@ -19,6 +24,33 @@ var
 eqn
 	pressuresStart(chamber) = pA;
 	doorsStart(door) = sO;
+	
+	
+	c2d(cI) = [dAI, dLI];
+	c2d(cO) = [dAO, dLO];
+	c2d(cL) = [dLI, dLO, dH];
+	c2d(cH) = [dH];
+
+	d2c(dAI) = [cI];
+	d2c(dAO) = [cO];
+	d2c(dLI) = [cI, cL];
+	d2c(dLO) = [cL, cO];
+	d2c(dH ) = [cL, cH];
+	
+	d2p(dAI) = pA;
+	d2p(dAO) = pA;
+	d2p(dLI) = pL;
+	d2p(dLO) = pL;
+	d2p(dH ) = pH;
+	
+	cr2d(cI, rI) = dAI;
+	cr2d(cI, rT) = dAI;
+	cr2d(cO, rO) = dAO;
+	cr2d(cO, rT) = dAO;
+	cr2d(cL, rI) = dLI;
+	cr2d(cL, rO) = dLO;
+	cr2d(cH, rI) = dH;
+	cr2d(cH, rO) = dH;
 
 act
 	nop, Yay;
@@ -41,6 +73,7 @@ act
 	s_pressure_status_response, r_pressure_status_response, c_pressure_status_response: Chamber # Pressure;
 	
 	s_door_set_request, r_door_set_request, c_door_set_request: Door # DoorState;
+	s_pressure_set_request, r_pressure_set_request, c_pressure_set_request: Chamber # Pressure;
 	
 proc 
 
@@ -59,32 +92,57 @@ proc
 		+
 		sum d: Door, s: DoorState . r_door_set_request(d, s) . Door_State_Controller(status[d -> s])
 	);
-	Door_Controller =
-		
-		r_Set_Door(dAI, sC)
-		. s_door_status_request(dAI)
-		. sum ds:DoorState . (r_door_status_response(dAI, ds)
-			. ((ds == sC) -> 
-				s_Door_Confirmed(dAI)
-			<>
-				s_door_set_request(dAI, sC)
-				. s_Door_Confirmed(dAI)
-			) . Door_Controller
+	Door_Controller = (
+	%	if door is in requested state -> confirm
+	%	elseif door open -> close door, confirm
+	%	elseif pressure is correct -> open door, confirm
+	%	else -> set pressure, wait for confirm of pressure, open door, confirm
+	
+		sum d:Door, s:DoorState.
+		(
+			r_Set_Door(d, s)
+			. s_door_status_request(d)
+			. sum ds:DoorState. 
+			(
+				r_door_status_response(d, ds)
+				. ((ds == s) -> % The door is in the requested state
+					s_Door_Confirmed(d)
+					. Door_Controller
+				<> ((ds == sO) -> % The door is open and must be closed
+					s_door_set_request(d, s)
+					. s_Door_Confirmed(d)
+					. Door_Controller
+					<> % The door is closed and must be opened
+						sum c:Chamber.
+						(
+							((c in d2c(d)) -> 
+								s_pressure_status_request(c)
+								. sum p:Pressure. 
+								(
+									r_pressure_status_response(c, p)
+									. ((d2p(d) != p) ->
+										s_Set_Pressure(c, d2p(d))
+										. r_Pressure_Confirmed(c)
+									)
+								)
+							)
+						)
+						. s_door_set_request(d, s)
+						. s_Door_Confirmed(d)
+						. Door_Controller
+					)
+				)
+			)
+		)
 	);
 	
 	Transport_Controller(numWafers: Int) = (
-		(numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sC) . Transport_Controller(numWafers - 1)
+		((numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sC) . Transport_Controller(numWafers - 1)
+		<>
+		r_Door_Confirmed(dAI) . Yay . Yay . Yay . Transport_Controller(0)
+		)
 	);
 	
-	%Wafer_Controller(status: Chamber -> ChamberState) = (
-	%
-	%	sum c: Chamber, s: ChamberState . rStatusUpdateRequest(p, s) . Wafer_Controller(status)
-	%	
-	%	
-	%	+
-	%	
-	%	
-	%);
 	
 	Starter = (
 		s_Door_Confirmed(dAI)
@@ -105,8 +163,8 @@ init
 	Wafer_In,
 	
 	
-	s_door_status_request,
-	s_door_status_response,
+	%s_door_status_request,
+	%s_door_status_response,
 	%s_pressure_status_request,
 	%s_pressure_status_response,
 	%r_door_status_request,
@@ -135,7 +193,6 @@ init
 	
   },
     Transport_Controller(2) ||
-    %Wafer_Controller(chambersStart) ||
 	Pressure_State_Controller(pressuresStart) ||
 	Pressure_Controller ||
 	Door_State_Controller(doorsStart) ||
