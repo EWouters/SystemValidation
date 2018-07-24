@@ -10,6 +10,7 @@ sort
 map
 	pressuresStart: Chamber -> Pressure;
 	doorsStart: Door -> DoorState;
+	actionsStart: Robot -> Action;
 	
 	c2d: Chamber -> List(Door); % get list of doors connected to chamber
 	d2c: Door -> List(Chamber); % get list of chambers connected to door
@@ -20,11 +21,12 @@ map
 var
 	chamber: Chamber;
 	door: Door;
+	robot: Robot;
 
 eqn
 	pressuresStart(chamber) = pA;
-	doorsStart(door) = sO;
-	
+	doorsStart(door) = sC;
+	actionsStart(robot) = aR;
 	
 	c2d(cI) = [dAI, dLI];
 	c2d(cO) = [dAO, dLO];
@@ -58,6 +60,7 @@ act
 	
 	% external actions
 	Wafer_In;
+	s_wafer_out;
 	
 	% communication actions (s = send, r = receive, c = communicate)
 	s_Set_Door, r_Set_Door, c_Set_Door: Door # DoorState;
@@ -66,14 +69,21 @@ act
 	s_Set_Pressure, r_Set_Pressure, c_Set_Pressure: Chamber # Pressure;
 	s_Pressure_Confirmed, r_Pressure_Confirmed, c_Pressure_Confirmed: Chamber;
 	
+	s_Move, r_Move, c_Move: Robot # Chamber # Action;
+	s_Move_Confirmed, r_Move_Confirmed, c_Move_Confirmed: Robot;
+	
 	s_door_status_request, r_door_status_request, c_door_status_request: Door;
 	s_door_status_response, r_door_status_response, c_door_status_response: Door # DoorState;
 	
 	s_pressure_status_request, r_pressure_status_request, c_pressure_status_request: Chamber;
 	s_pressure_status_response, r_pressure_status_response, c_pressure_status_response: Chamber # Pressure;
 	
+	s_robot_status_request, r_robot_status_request, c_robot_status_request: Robot;
+	s_robot_status_response, r_robot_status_response, c_robot_status_response: Robot # Action;
+	
 	s_door_set_request, r_door_set_request, c_door_set_request: Door # DoorState;
 	s_pressure_set_request, r_pressure_set_request, c_pressure_set_request: Chamber # Pressure;
+	s_robot_set_request, r_robot_set_request, c_robot_set_request: Robot # Action;
 	
 proc 
 
@@ -82,9 +92,37 @@ proc
 		+
 		sum c: Chamber, p: Pressure . r_pressure_set_request(c, p) . Pressure_State_Controller(status[c -> p])
 	);
-	Pressure_Controller = (
-		
-		r_Set_Pressure(cI,pL) . s_door_status_request(dLI) . r_door_status_response(dLI, sO) . Yay . s_Pressure_Confirmed(cI) . Pressure_Controller()
+	Pressure_Controller(c:Chamber) = (
+	%	if p == this p -> confirm
+	%	elseif doors of this room are closed -> confirm and update pressures
+	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
+
+		sum p: Pressure.
+		(
+			r_Set_Pressure(c, p)
+			. s_pressure_status_request(c)
+			. sum ps:Pressure.
+			(
+				r_pressure_status_response(c, ps)
+				. ((p == ps) -> % if p == pstate -> confirm
+					s_Pressure_Confirmed(c)
+					. Pressure_Controller(c)
+				<>
+					sum d:Door.
+					(
+						((d in c2d(c)) ->
+							s_Set_Door(d, sC)
+							. r_Door_Confirmed(d)
+						<>
+							nop % Empty else statement ???
+						)
+					)
+					. s_pressure_set_request(c, p)
+					. s_Pressure_Confirmed(c)
+					. Pressure_Controller(c)
+				)
+			)
+		)
 	);
 
 	Door_State_Controller(status: Door -> DoorState) = (
@@ -92,13 +130,13 @@ proc
 		+
 		sum d: Door, s: DoorState . r_door_set_request(d, s) . Door_State_Controller(status[d -> s])
 	);
-	Door_Controller = (
+	Door_Controller(d:Door) = (
 	%	if door is in requested state -> confirm
 	%	elseif door open -> close door, confirm
 	%	elseif pressure is correct -> open door, confirm
 	%	else -> set pressure, wait for confirm of pressure, open door, confirm
 	
-		sum d:Door, s:DoorState.
+		sum s:DoorState.
 		(
 			r_Set_Door(d, s)
 			. s_door_status_request(d)
@@ -107,29 +145,117 @@ proc
 				r_door_status_response(d, ds)
 				. ((ds == s) -> % The door is in the requested state
 					s_Door_Confirmed(d)
-					. Door_Controller
+					. Door_Controller(d)
 				<> ((ds == sO) -> % The door is open and must be closed
 					s_door_set_request(d, s)
 					. s_Door_Confirmed(d)
-					. Door_Controller
+					. Door_Controller(d)
 					<> % The door is closed and must be opened
 						sum c:Chamber.
 						(
 							((c in d2c(d)) -> 
 								s_pressure_status_request(c)
-								. sum p:Pressure. 
+								. sum p:Pressure.
 								(
 									r_pressure_status_response(c, p)
 									. ((d2p(d) != p) ->
 										s_Set_Pressure(c, d2p(d))
 										. r_Pressure_Confirmed(c)
+									<>
+										nop % Empty else statement ???
 									)
 								)
 							)
 						)
 						. s_door_set_request(d, s)
 						. s_Door_Confirmed(d)
-						. Door_Controller
+						. Door_Controller(d)
+					)
+				)
+			)
+		)
+	);
+	
+	Robot_State_Controller(status: Robot -> Action) = (
+		sum r: Robot, a: Action . r_robot_status_request(r) . s_robot_status_response(r, status(r)) . Robot_State_Controller()
+		+
+		sum r: Robot, a: Action . r_robot_set_request(r, a) . Robot_State_Controller(status[r -> a])
+	);
+	
+	Robot_Controller(r:Robot) = (
+	%	if robot unoccupied ->
+	%		if door open -> confirm
+	%		else -> set_door open, wait for confirmation of door, confirm move
+	%	else break wafer
+		
+		sum a:Action, c:Chamber.
+		(
+			r_Move(r, c, a)
+			. s_robot_status_request(r)
+			. sum as:Action.
+			(
+				r_robot_status_response(r, as)
+				. ((as == aG) ->
+					% The robot is occupied, so self loop
+					s_Move(r, c, a)
+					. Yay . nop
+					. Robot_Controller(r)
+				<>	% The robot is available
+					% Open the required door for the robot
+																			%sum d:Door.
+																			%(
+																			%	((d in cr2d(c, r)) ->
+																			%		s_Set_Door(d, sO)
+																			%		. r_Door_Confirmed(d)
+																			%	)
+																			%)
+					s_Set_Door(cr2d(c, r), sO)
+					. r_Door_Confirmed(cr2d(c, r))
+					. ((r == rT) ->
+						% The transport robot gets a command
+						((c == cI && a == aR) ->
+							s_Move_Confirmed(r)
+							. s_Move(rI, cI, aG) % route wafer from cI to cL
+							. Robot_Controller(r)
+						<>
+							((c == cO && a == aG) ->
+								s_Move_Confirmed(r)
+								. s_wafer_out % route wafer to output tray
+								. Robot_Controller(r)
+							)
+						)
+					<>
+						((r == rI) ->
+							% The input robot gets a command
+							((c == cI && a == aG) ->
+								s_Move_Confirmed(r)
+								. s_Move(rI, cH, aR) % route wafer from cI to cH
+								. Robot_Controller(r)
+							<> ((c == cH && a == aR) ->
+									s_Move_Confirmed(r)
+									. s_Move(rO, cH, aG) % route wafer from cH to cO
+									. Robot_Controller(r)
+								<>
+									nop % We could route the wafer in the opposite directions here
+								)
+							)
+						<>
+							((r == rO) ->
+								% The output robot gets a command
+								((c == cH && a == aG) ->
+									s_Move_Confirmed(r)
+									. s_Move(rO, cO, aR) % route wafer from cH to cO
+									. Robot_Controller(r)
+								<> ((c == cO && a == aR) ->
+										s_Move_Confirmed(r)
+										. s_Move(rT, cO, aG) % route wafer from cO to wafer_out
+										. Robot_Controller(r)
+									<>
+										nop % We could route the wafer in the opposite directions here
+									)
+								)
+							)
+						)
 					)
 				)
 			)
@@ -137,66 +263,89 @@ proc
 	);
 	
 	Transport_Controller(numWafers: Int) = (
-		((numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sC) . Transport_Controller(numWafers - 1)
+		((numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sO) . Transport_Controller(numWafers - 1)
 		<>
 		r_Door_Confirmed(dAI) . Yay . Yay . Yay . Transport_Controller(0)
 		)
 	);
 	
-	
 	Starter = (
-		s_Door_Confirmed(dAI)
+		%s_Door_Confirmed(dAI)
+		s_Move(rT, cI, aR)
 	);
-	  
-	  
-	  
+
+
 init
-  hide({
-    nop
-  },
-  allow({
-	Yay,
-    c_Set_Pressure,
-	c_Pressure_Confirmed,
-    c_Set_Door,
-	c_Door_Confirmed,
-	Wafer_In,
+	hide({
+		s_door_status_request
+	},
+	allow({
+		nop,
+		Yay,
+		c_Set_Pressure,
+		c_Pressure_Confirmed,
+		c_Set_Door,
+		c_Door_Confirmed,
+		c_Move,
+		c_Move_Confirmed,
+		Wafer_In,
+		s_wafer_out,
+		
+		
+		%s_door_status_request,
+		%s_door_status_response,
+		%s_pressure_status_request,
+		%s_pressure_status_response,
+		%s_robot_status_request,
+		%s_robot_status_response,
+		c_door_status_request,
+		c_door_status_response,
+		c_pressure_status_request,
+		c_pressure_status_response,
+		c_robot_status_request,
+		c_robot_status_response,
+		
+		c_door_set_request,
+		c_pressure_set_request,
+		c_robot_set_request
 	
+	},
+	comm({
+		s_Set_Door  				| r_Set_Door 				-> c_Set_Door,
+		s_Door_Confirmed  			| r_Door_Confirmed 			-> c_Door_Confirmed,
+		s_Set_Pressure  			| r_Set_Pressure 			-> c_Set_Pressure,
+		s_Pressure_Confirmed  		| r_Pressure_Confirmed 		-> c_Pressure_Confirmed,
+		s_Move 						| r_Move		 			-> c_Move,
+		s_Move_Confirmed	  		| r_Move_Confirmed 			-> c_Move_Confirmed,
+		s_door_status_request 		| r_door_status_request		-> c_door_status_request,
+		s_door_status_response 		| r_door_status_response	-> c_door_status_response,
+		s_pressure_status_request 	| r_pressure_status_request	-> c_pressure_status_request,
+		s_pressure_status_response 	| r_pressure_status_response-> c_pressure_status_response,
+		s_robot_status_request	 	| r_robot_status_request	-> c_robot_status_request,
+		s_robot_status_response 	| r_robot_status_response	-> c_robot_status_response,
+		
+		s_door_set_request		 	| r_door_set_request		-> c_door_set_request,
+		s_pressure_set_request		| r_pressure_set_request	-> c_pressure_set_request,
+		s_robot_set_request			| r_robot_set_request		-> c_robot_set_request
+		
 	
-	%s_door_status_request,
-	%s_door_status_response,
-	%s_pressure_status_request,
-	%s_pressure_status_response,
-	%r_door_status_request,
-	%r_door_status_response,
-	%r_pressure_status_request,
-	%r_pressure_status_response,
-	c_door_status_request,
-	c_door_status_response,
-	c_pressure_status_request,
-	c_pressure_status_response,
-	
-	c_door_set_request
-	
-  },
-  comm({
-    s_Set_Door  				| r_Set_Door 				-> c_Set_Door,
-    s_Door_Confirmed  			| r_Door_Confirmed 			-> c_Door_Confirmed,
-    s_Set_Pressure  			| r_Set_Pressure 			-> c_Set_Pressure,
-    s_door_status_request 		| r_door_status_request		-> c_door_status_request,
-    s_door_status_response 		| r_door_status_response	-> c_door_status_response,
-    s_pressure_status_request 	| r_pressure_status_request	-> c_pressure_status_request,
-    s_pressure_status_response 	| r_pressure_status_response-> c_pressure_status_response,
-	
-    s_door_set_request		 	| r_door_set_request		-> c_door_set_request
-	
-	
-  },
-    Transport_Controller(2) ||
+	},
+    Transport_Controller(5) ||
 	Pressure_State_Controller(pressuresStart) ||
-	Pressure_Controller ||
+	Pressure_Controller(cI) ||
+	Pressure_Controller(cO) ||
+	Pressure_Controller(cL) ||
+	Pressure_Controller(cH) ||
 	Door_State_Controller(doorsStart) ||
-	Door_Controller ||
+	Door_Controller(dAI) ||
+	Door_Controller(dAO) ||
+	Door_Controller(dLI) ||
+	Door_Controller(dLO) ||
+	Door_Controller(dH ) ||
+	Robot_State_Controller(actionsStart) ||
+	Robot_Controller(rT) ||
+	Robot_Controller(rI) ||
+	Robot_Controller(rO) ||
 	Starter
-  ))
-	);
+	))
+);
