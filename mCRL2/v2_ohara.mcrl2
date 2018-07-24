@@ -1,0 +1,154 @@
+sort
+			Chamber = struct cI | cO | cL | cH;
+			Pressure = struct pA | pL | pH;
+			Door = struct dAI | dAO | dLI | dLO | dH;
+			DoorState = struct sO | sC;
+			ChamberState = struct cE | cU | cP;
+
+	%Place    = struct RI | RO | cI | cO | cL | cH | P;
+
+map
+	pressuresStart: Chamber -> Pressure;
+	doorsStart: Door -> DoorState;
+
+
+var
+	chamber: Chamber;
+	door: Door;
+
+eqn
+	pressuresStart(chamber) = pA;
+	doorsStart(door) = sO;
+
+act
+	nop, Yay;
+
+
+	% external actions
+	Wafer_In;
+
+	% communication actions (s = send, r = receive, c = communicate)
+	s_Set_Door, r_Set_Door, c_Set_Door: Door # DoorState;
+	s_Door_Confirmed, r_Door_Confirmed, c_Door_Confirmed: Door;
+
+	s_Set_Pressure, r_Set_Pressure, c_Set_Pressure: Chamber # Pressure;
+	s_Pressure_Confirmed, r_Pressure_Confirmed, c_Pressure_Confirmed: Chamber;
+
+	s_door_status_request, r_door_status_request, c_door_status_request: Door;
+	s_door_status_response, r_door_status_response, c_door_status_response: Door # DoorState;
+
+	s_pressure_status_request, r_pressure_status_request, c_pressure_status_request: Chamber;
+	s_pressure_status_response, r_pressure_status_response, c_pressure_status_response: Chamber # Pressure;
+
+	s_door_set_request, r_door_set_request, c_door_set_request: Door # DoorState;
+
+proc
+
+	Pressure_State_Controller(status: Chamber -> Pressure) = (
+		sum c: Chamber, p: Pressure . r_pressure_status_request(c) . s_pressure_status_response(c, status(c)) . Pressure_State_Controller()
+		+
+		sum c: Chamber, p: Pressure . r_pressure_set_request(c, p) . Pressure_State_Controller(status[c -> p])
+	);
+	Pressure_Controller = (
+
+		r_Set_Pressure(cI,pL)
+		 . s_pressure_status_request(dLI)
+		 . sum p:Pressure . r_pressure_status_response(dLI, sO)
+		  . ((p == pL)) ->
+			 s_Pressure_Confirmed(cI)
+			<>
+			 s_pressure_set_request(cI, sO)
+			  . s_Pressure_Controller(cI)
+			) . Pressure_Controller
+	);
+
+	Door_State_Controller(status: Door -> DoorState) = (
+		sum d: Door, s: DoorState . r_door_status_request(d) . s_door_status_response(d, status(d)) . Door_State_Controller()
+		+
+		sum d: Door, s: DoorState . r_door_set_request(d, s) . Door_State_Controller(status[d -> s])
+	);
+	Door_Controller =
+
+		r_Set_Door(dAI, sC)
+		. s_door_status_request(dAI)
+		. sum ds:DoorState . (r_door_status_response(dAI, ds)
+			. ((ds == sC) ->
+				s_Door_Confirmed(dAI)
+			<>
+				s_door_set_request(dAI, sC)
+				. s_Door_Confirmed(dAI)
+			) . Door_Controller
+	);
+
+	Transport_Controller(numWafers: Int) = (
+		(numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sC) . Transport_Controller(numWafers - 1)
+	);
+
+	%Wafer_Controller(status: Chamber -> ChamberState) = (
+	%
+	%	sum c: Chamber, s: ChamberState . rStatusUpdateRequest(p, s) . Wafer_Controller(status)
+	%
+	%
+	%	+
+	%
+	%
+	%);
+
+	Starter = (
+		s_Door_Confirmed(dAI)
+	);
+
+
+
+init
+  hide({
+    nop
+  },
+  allow({
+	Yay,
+    c_Set_Pressure,
+	c_Pressure_Confirmed,
+    c_Set_Door,
+	c_Door_Confirmed,
+	Wafer_In,
+
+
+	s_door_status_request,
+	s_door_status_response,
+	%s_pressure_status_request,
+	%s_pressure_status_response,
+	%r_door_status_request,
+	%r_door_status_response,
+	%r_pressure_status_request,
+	%r_pressure_status_response,
+	c_door_status_request,
+	c_door_status_response,
+	c_pressure_status_request,
+	c_pressure_status_response,
+
+	c_door_set_request
+
+  },
+  comm({
+    s_Set_Door  				| r_Set_Door 				-> c_Set_Door,
+    s_Door_Confirmed  			| r_Door_Confirmed 			-> c_Door_Confirmed,
+    s_Set_Pressure  			| r_Set_Pressure 			-> c_Set_Pressure,
+		s_Pressure_Confirmed | r_Pressure_Confirmed -> c_Pressure_Confirmed,
+    s_door_status_request 		| r_door_status_request		-> c_door_status_request,
+    s_door_status_response 		| r_door_status_response	-> c_door_status_response,
+    s_pressure_status_request 	| r_pressure_status_request	-> c_pressure_status_request,
+    s_pressure_status_response 	| r_pressure_status_response-> c_pressure_status_response,
+
+    s_door_set_request		 	| r_door_set_request		-> c_door_set_request
+
+
+  },
+    Transport_Controller(2) ||
+    %Wafer_Controller(chambersStart) ||
+	Pressure_State_Controller(pressuresStart) ||
+	Pressure_Controller ||
+	Door_State_Controller(doorsStart) ||
+	Door_Controller ||
+	Starter
+  ))
+	);
