@@ -47,16 +47,17 @@ eqn
 	d2p(dLO) = pL;
 	d2p(dH ) = pH;
 
-	cr2d(cI, rI) = dAI;
-	cr2d(cI, rT) = dAI;
-	cr2d(cO, rO) = dAO;
-	cr2d(cO, rT) = dAO;
-	cr2d(cL, rI) = dLI;
-	cr2d(cL, rO) = dLO;
-	cr2d(cH, rI) = dH;
-	cr2d(cH, rO) = dH;
+	cr2d(cI, rI) = dLI; %
+	cr2d(cI, rT) = dAI; %
+	cr2d(cO, rO) = dLO; %
+	cr2d(cO, rT) = dAO; %
+	%cr2d(cL, rI) = dLI;
+	%cr2d(cL, rO) = dLO;
+	cr2d(cH, rI) = dH;  %
+	cr2d(cH, rO) = dH;  %
+	cr2d(cT, rT) = dAO;
 
-	cs2c(cT, wP) = cT; % ????????
+	%cs2c(cT, wP) = cT; % ????????
 	cs2c(cT, wN) = cI;
 	cs2c(cI, wP) = cT;
 	cs2c(cL, wN) = cH;
@@ -219,74 +220,12 @@ proc
 		sum a:Action, c:Chamber.
 		(
 			r_Move(r, c, a)
-			. s_robot_status_request(r)
-			. sum as:Action.
-			(
-				r_robot_status_response(r, as)
-				. ((as == aG) ->
-					% The robot is occupied, so self loop
-					s_Move(r, c, a)
-					. Yay . nop
-					. Robot_Controller(r)
-				<>	% The robot is available
-					% Open the required door for the robot
-																			%sum d:Door.
-																			%(
-																			%	((d in cr2d(c, r)) ->
-																			%		s_Set_Door(d, sO)
-																			%		. r_Door_Confirmed(d)
-																			%	)
-																			%)
-					s_Set_Door(cr2d(c, r), sO)
-					. r_Door_Confirmed(cr2d(c, r))
-					. ((r == rT) ->
-						% The transport robot gets a command
-						((c == cI && a == aR) ->
-							s_Move_Confirmed(r)
-							. s_Move(rI, cI, aG) % route wafer from cI to cL
-							. Robot_Controller(r)
-						<>
-							((c == cO && a == aG) ->
-								s_Move_Confirmed(r)
-								. s_wafer_out % route wafer to output tray
-								. Robot_Controller(r)
-							)
-						)
-					<>
-						((r == rI) ->
-							% The input robot gets a command
-							((c == cI && a == aG) ->
-								s_Move_Confirmed(r)
-								. s_Move(rI, cH, aR) % route wafer from cI to cH
-								. Robot_Controller(r)
-							<> ((c == cH && a == aR) ->
-									s_Move_Confirmed(r)
-									. s_Move(rO, cH, aG) % route wafer from cH to cO
-									. Robot_Controller(r)
-								<>
-									nop % We could route the wafer in the opposite directions here
-								)
-							)
-						<>
-							((r == rO) ->
-								% The output robot gets a command
-								((c == cH && a == aG) ->
-									s_Move_Confirmed(r)
-									. s_Move(rO, cO, aR) % route wafer from cH to cO
-									. Robot_Controller(r)
-								<> ((c == cO && a == aR) ->
-										s_Move_Confirmed(r)
-										. s_Move(rT, cO, aG) % route wafer from cO to wafer_out
-										. Robot_Controller(r)
-									<>
-										nop % We could route the wafer in the opposite directions here
-									)
-								)
-							)
-						)
-					)
-				)
-			)
+			% Open the required door for the robot
+			. s_Set_Door(cr2d(c, r), sO)
+			. r_Door_Confirmed(cr2d(c, r))
+			. s_Move_Confirmed(r)
+			%. s_Set_Door(cr2d(c, r), sC)
+			. Robot_Controller(r)
 		)
 	);
 
@@ -302,29 +241,48 @@ proc
 
 	%s_Move(r, c, a)
 
-		sum c:Chamber, ws: WaferStatus.
-		(
+	%	sum c:Chamber, ws: WaferStatus.
+	%	(
 			((c == cT && ws == wP) ->
-				s_wafer_out
+				s_Move(rT, cT, aR)
+				. r_Move_Confirmed(rT)
+				. s_wafer_out
 			<>
 				s_Move(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
 				. r_Move_Confirmed(c2c2r(c, cs2c(c, ws)))
-				. Wafer_Controller(c, ws)
+				. Wafer_Controller(cs2c(c, ws), ws)
+				%. Wafer_Controller(cT, wP)
 			)
-		)
+	%	)
+	);
+	
+	Wafer_Controller2 = (
+		s_Move(rT, cI, aR)
+		. r_Move_Confirmed(rT)
+		. s_Move(rI, cI, aG)
+		. r_Move_Confirmed(rI)
+		. s_Move(rI, cH, aR)
+		. r_Move_Confirmed(rI)
+		. s_Move(rO, cH, aG)
+		. r_Move_Confirmed(rO)
+		. s_Move(rO, cO, aR)
+		. r_Move_Confirmed(rO)
+		. s_Move(rT, cO, aG)
+		. r_Move_Confirmed(rT)
+		. s_wafer_out
 	);
 
 
 
-	Transport_Controller(numWafers: Int) = (
-		((numWafers > 0) ->
-			Wafer_In . (Wafer_Controller(cT, wN) || Wafer_Controller(cT, wN))
-			%Wafer_In . (Transport_Controller(numWafers - 1) )%|| Wafer_Controller(cT, wN))
-
-		<>
-			sysFinished %. Transport_Controller(0)
-		)
-	);
+	%Transport_Controller(numWafers: Int) = (
+	%	((numWafers > 0) ->
+	%		Wafer_In . (Wafer_Controller(cT, wN) || Wafer_Controller(cT, wN))
+	%		%Wafer_In . (Transport_Controller(numWafers - 1) )%|| Wafer_Controller(cT, wN))
+    %
+	%	<>
+	%		sysFinished %. Transport_Controller(0)
+	%	)
+	%);
 
 
 init
@@ -384,7 +342,7 @@ init
 
 
 	},
-    Transport_Controller(5) ||
+    %Transport_Controller(5) ||
 	Pressure_State_Controller(pressuresStart) ||
 	Pressure_Controller(cI) ||
 	Pressure_Controller(cO) ||
@@ -395,10 +353,14 @@ init
 	Door_Controller(dAO) ||
 	Door_Controller(dLI) ||
 	Door_Controller(dLO) ||
-	Door_Controller(dH ) %||
+	Door_Controller(dH ) ||
 	%Robot_State_Controller(actionsStart) ||
-	%Robot_Controller(rT) ||
-	%Robot_Controller(rI) ||
-	%Robot_Controller(rO)
+	Robot_Controller(rT) ||
+	Robot_Controller(rI) ||
+	Robot_Controller(rO) ||
+	%Wafer_Controller(cT, wN) ||
+	%Wafer_Controller(cT, wN) %||
+	Wafer_Controller2 ||
+	Wafer_Controller2
 	))
 );
