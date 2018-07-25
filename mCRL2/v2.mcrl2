@@ -1,11 +1,11 @@
 sort
-			Chamber = struct cI | cO | cL | cH;
-			Pressure = struct pA | pL | pH;
-			Door = struct dAI | dAO | dLI | dLO | dH;
-			Robot = struct rI | rO | rT;
-			DoorState = struct sO | sC;
-			Action = struct aG | aR;
-	
+	Chamber = struct cT | cI | cO | cL | cH;
+	Pressure = struct pA | pL | pH;
+	Door = struct dAI | dAO | dLI | dLO | dH;
+	Robot = struct rI | rO | rT;
+	DoorState = struct sO | sC;
+	Action = struct aG | aR;
+	WaferStatus   = struct wN | wP;
 
 map
 	pressuresStart: Chamber -> Pressure;
@@ -16,7 +16,9 @@ map
 	d2c: Door -> List(Chamber); % get list of chambers connected to door
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
-	
+	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
+	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
+	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
 
 var
 	chamber: Chamber;
@@ -53,6 +55,30 @@ eqn
 	cr2d(cL, rO) = dLO;
 	cr2d(cH, rI) = dH;
 	cr2d(cH, rO) = dH;
+	
+	cs2c(cT, wP) = cT; % ????????
+	cs2c(cT, wN) = cI;
+	cs2c(cI, wP) = cT;
+	cs2c(cL, wN) = cH;
+	cs2c(cL, wP) = cO;
+	cs2c(cH, wN) = cL; % ????????
+	cs2c(cH, wP) = cL;
+	cs2c(cO, wN) = cL;
+	cs2c(cO, wP) = cT;
+	
+	c2c2r(cT,cI) = rT;
+	c2c2r(cI,cL) = rI;
+	c2c2r(cL,cH) = rI;
+	c2c2r(cH,cL) = rO;
+	c2c2r(cL,cO) = rO;
+	c2c2r(cO,cT) = rT;
+	
+	c2c2a(cT,cI) = aR;
+	c2c2a(cI,cL) = aG;
+	c2c2a(cL,cH) = aR;
+	c2c2a(cH,cL) = aG;
+	c2c2a(cL,cO) = aR;
+	c2c2a(cO,cT) = aG;
 
 act
 	nop, Yay;
@@ -60,6 +86,7 @@ act
 	
 	% external actions
 	Wafer_In;
+	Project_wafer;
 	s_wafer_out;
 	
 	% communication actions (s = send, r = receive, c = communicate)
@@ -262,6 +289,30 @@ proc
 		)
 	);
 	
+	Wafer_Controller(c:Chamber, ws: WaferStatus) = (
+	
+	%cs2c
+	%c2c2r
+	%c2c2a
+	
+	%nc = cs2c(c, ws)
+	%a = c2c2a(c, nc)
+	%r = c2c2r(c, nc)
+	
+	%s_Move(r, c, a)
+	
+		sum c:Chamber, ws: WaferStatus.
+		(
+			((c == cT && ws == wP) ->
+				s_wafer_out
+			<>
+				s_Move(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
+				. r_Move_Confirmed(c2c2r(c, cs2c(c, ws)))
+				. Wafer_Controller(c, ws)
+			)
+		)
+	);
+	
 	Transport_Controller(numWafers: Int) = (
 		((numWafers > 0) -> r_Door_Confirmed(dAI) . Wafer_In . s_Set_Door(dAI, sO) . Transport_Controller(numWafers - 1)
 		<>
@@ -289,6 +340,7 @@ init
 		c_Move,
 		c_Move_Confirmed,
 		Wafer_In,
+		Project_wafer,
 		s_wafer_out,
 		
 		
