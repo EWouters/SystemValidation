@@ -19,7 +19,7 @@ map
 	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
 	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
 	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
-
+	
 var
 	chamber: Chamber;
 	door: Door;
@@ -80,6 +80,11 @@ eqn
 	c2c2a(cH,cL) = aG;
 	c2c2a(cL,cO) = aR;
 	c2c2a(cO,cT) = aG;
+	
+	
+	
+	
+	
 
 act
 	nop1,
@@ -144,84 +149,118 @@ proc
 					. Pressure_Controller(c)
 				<>
 				
+				
+				
+				
+				
+				
+				
 	%				(sum d:Door.
 	%				(
 	%					((d in c2d(c)) ->
+	%						s_door_status_request(d)
+	%						. (sum ds:DoorState.
+	%							r_door_status_response(d, ds)
+	%							. ((ds != sC) ->
+	%								s_Set_Door(d, sC)
+	%								. r_Door_Confirmed(d)
+	%							<>
+	%								nop4 % Empty else statement ???
+	%							)
+	%						)
 	%						s_Set_Door(d, sC)
 	%						. r_Door_Confirmed(d)
 	%					%<>
 	%					%	nop1 % Empty else statement ???
 	%					)
 	%				))
+				
+	%				(sum d:Door.
+	%				(
+	%					((d in c2d(c)) ->
+	%						askCloseDoor(d)
+	%					%<>
+	%					%	nop1 % Empty else statement ???
+	%					)
+	%				))
 	
 	
-		%			(
-		%				((c == cI) -> 
-		%					s_Set_Door(dAI, sC)
-		%					. r_Door_Confirmed(dAI)
-		%					. s_Set_Door(dLI, sC)
-		%					. r_Door_Confirmed(dLI)
-		%				<>
-		%					nop1 % Empty else statement ???
-		%				)
-		%				+ ((c == cO) -> 
-		%					s_Set_Door(dAO, sC)
-		%					. r_Door_Confirmed(dAO)
-		%					. s_Set_Door(dLO, sC)
-		%					. r_Door_Confirmed(dLO)
-		%				<>
-		%					nop1 % Empty else statement ???
-		%				)
-		%
-		%				+ ((c == cL) -> 
-		%					s_Set_Door(dLI, sC)
-		%					. r_Door_Confirmed(dLI)
-		%					. s_Set_Door(dLO, sC)
-		%					. r_Door_Confirmed(dLO)
-		%					. s_Set_Door(dH, sC)
-		%					. r_Door_Confirmed(dH)
-		%				<>
-		%					nop1 % Empty else statement ???
-		%				)
-		%				+ ((c == cH) -> 
-		%					s_Set_Door(dH, sC)
-		%					. r_Door_Confirmed(dH)
-		%				<>
-		%					nop1 % Empty else statement ???
-		%				)
-		%			)
+	
+	
+	
+	
+	
+					%(
+					%	((c == cI) ->
+					%		askCloseDoor(dAI)
+					%		. askCloseDoor(dLI)
+					%	<>
+					%		nop1 % Empty else statement ???
+					%	)
+					%	+ ((c == cO) ->
+					%		askCloseDoor(dAO)
+					%		. askCloseDoor(dLO)
+					%	<>
+					%		nop1 % Empty else statement ???
+					%	)
+		            %
+					%	+ ((c == cL) ->
+					%		askCloseDoor(dLI)
+					%		. askCloseDoor(dLO)
+					%		. askCloseDoor(dH )
+					%	<>
+					%		nop1 % Empty else statement ???
+					%	)
+					%	+ ((c == cH) ->
+					%		askCloseDoor(dH )
+					%	<>
+					%		nop1 % Empty else statement ???
+					%	)
+					%)
 					
 					(
-						((c == cI) -> 
-							s_Set_Door(dAI, sC)
-							. r_Door_Confirmed(dAI)
-							. s_Set_Door(dLI, sC)
-							. r_Door_Confirmed(dLI)
-						<>
-							((c == cO) -> 
-								s_Set_Door(dAO, sC)
-								. r_Door_Confirmed(dAO)
-								. s_Set_Door(dLO, sC)
-								. r_Door_Confirmed(dLO)
-							<>
-								((c == cL) -> 
-									s_Set_Door(dLI, sC)
-									. r_Door_Confirmed(dLI)
-									. s_Set_Door(dLO, sC)
-									. r_Door_Confirmed(dLO)
-									. s_Set_Door(dH, sC)
-									. r_Door_Confirmed(dH)
-								<>
-									((c == cH) -> 
-										s_Set_Door(dH, sC)
-										. r_Door_Confirmed(dH)
-									<>
-										nop1 % Empty else statement ???
-									)
-								)
-							)
+						((c == cI) ->
+							askCloseDoor(dAI)
+							. askCloseDoor(dLI)
+						)
+						+ ((c == cO) ->
+							askCloseDoor(dAO)
+							. askCloseDoor(dLO)
+						)
+		
+						+ ((c == cL) ->
+							askCloseDoor(dLI)
+							. askCloseDoor(dLO)
+							. askCloseDoor(dH )
+						)
+						+ ((c == cH) ->
+							askCloseDoor(dH )
 						)
 					)
+					
+			%		(
+			%			((c == cI) -> 
+			%				askCloseDoor(dAI)
+			%				. askCloseDoor(dLI)
+			%			<>
+			%				((c == cO) -> 
+			%					askCloseDoor(dAO)
+			%					. askCloseDoor(dLO)
+			%				<>
+			%					((c == cL) -> 
+			%						askCloseDoor(dLI)
+			%						. askCloseDoor(dLO)
+			%						. askCloseDoor(dH )
+			%					<>
+			%						((c == cH) -> 
+			%							askCloseDoor(dH )
+			%						<>
+			%							nop1 % Empty else statement ???
+			%						)
+			%					)
+			%				)
+			%			)
+			%		)
 					. s_pressure_set_request(c, p)
 					. s_Pressure_Confirmed(c)
 					. Pressure_Controller(c)
@@ -235,6 +274,18 @@ proc
 		+
 		sum d: Door, s: DoorState . r_door_set_request(d, s) . Door_State_Controller(status[d -> s])
 	);
+	
+	
+	
+%	askSetPressure(d:Door, c:Chamber) = s_door_status_request(d). (r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC));
+%									s_pressure_status_request(c). (r_pressure_status_response(c, p) . s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) + 
+%																					. ((d2p(d) != p)
+
+
+
+
+	askCloseDoor(d:Door) = s_door_status_request(d). (r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC));
+	
 	Door_Controller(d:Door) = (
 	%	if door is in requested state -> confirm
 	%	elseif door open -> close door, confirm
@@ -586,6 +637,18 @@ proc
 		. r_Move_Confirmed(rT)
 		. s_wafer_out
 	);
+	
+%	Wafer_Controller3 = (
+%		s_Set_Door(dLI, sO)
+%		. r_Door_Confirmed(dLI)
+%		. s_wafer_out
+%		%. s_Set_Door(dLI, sO)
+%		%. r_Door_Confirmed(dLI)
+%		%. s_Set_Door(dAI, sC)
+%		%. r_Door_Confirmed(dAI)
+%		%. s_Set_Door(dLI, sC)
+%		%. r_Door_Confirmed(dLI)
+%	);
 
 
 
@@ -602,7 +665,13 @@ proc
 
 init
 	hide({
-		s_door_status_request
+		%c_door_status_request,
+		%c_door_status_response,
+		%c_pressure_status_request,
+		%c_pressure_status_response,
+		%c_robot_status_request,
+		%c_robot_status_response,
+		nop
 	},
 	allow({
 		nop1,
