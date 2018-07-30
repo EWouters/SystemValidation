@@ -112,13 +112,10 @@ act
 	s_Move, r_Move, c_Move: Robot # Chamber # Action;
 	s_Move_Confirmed, r_Move_Confirmed, c_Move_Confirmed: Robot;
 
-	s_door_status_request, r_door_status_request, c_door_status_request: Door;
 	s_door_status_response, r_door_status_response, c_door_status_response: Door # DoorState;
 
-	s_pressure_status_request, r_pressure_status_request, c_pressure_status_request: Chamber;
 	s_pressure_status_response, r_pressure_status_response, c_pressure_status_response: Chamber # Pressure;
 
-	s_robot_status_request, r_robot_status_request, c_robot_status_request: Robot;
 	s_robot_status_response, r_robot_status_response, c_robot_status_response: Robot # Action;
 
 	s_door_set_request, r_door_set_request, c_door_set_request: Door # DoorState;
@@ -128,7 +125,7 @@ act
 proc
 
 	Pressure_State_Controller(status: Chamber -> Pressure) = (
-		sum c: Chamber, p: Pressure . r_pressure_status_request(c) . s_pressure_status_response(c, status(c)) . Pressure_State_Controller()
+		sum c: Chamber, p: Pressure . s_pressure_status_response(c, status(c)) . Pressure_State_Controller()
 		+
 		sum c: Chamber, p: Pressure . r_pressure_set_request(c, p) . Pressure_State_Controller(status[c -> p])
 	);
@@ -140,7 +137,6 @@ proc
 		sum p: Pressure.
 		(
 			r_Set_Pressure(c, p)
-			. s_pressure_status_request(c)
 			. sum ps:Pressure.
 			(
 				r_pressure_status_response(c, ps)
@@ -148,33 +144,6 @@ proc
 					s_Pressure_Confirmed(c)
 					. Pressure_Controller(c)
 				<>
-				
-				
-				
-				
-				
-				
-				
-	%				(sum d:Door.
-	%				(
-	%					((d in c2d(c)) ->
-	%						s_door_status_request(d)
-	%						. (sum ds:DoorState.
-	%							r_door_status_response(d, ds)
-	%							. ((ds != sC) ->
-	%								s_Set_Door(d, sC)
-	%								. r_Door_Confirmed(d)
-	%							<>
-	%								nop4 % Empty else statement ???
-	%							)
-	%						)
-	%						s_Set_Door(d, sC)
-	%						. r_Door_Confirmed(d)
-	%					%<>
-	%					%	nop1 % Empty else statement ???
-	%					)
-	%				))
-				
 	%				(sum d:Door.
 	%				(
 	%					((d in c2d(c)) ->
@@ -183,40 +152,6 @@ proc
 	%					%	nop1 % Empty else statement ???
 	%					)
 	%				))
-	
-	
-	
-	
-	
-	
-	
-					%(
-					%	((c == cI) ->
-					%		askCloseDoor(dAI)
-					%		. askCloseDoor(dLI)
-					%	<>
-					%		nop1 % Empty else statement ???
-					%	)
-					%	+ ((c == cO) ->
-					%		askCloseDoor(dAO)
-					%		. askCloseDoor(dLO)
-					%	<>
-					%		nop1 % Empty else statement ???
-					%	)
-		            %
-					%	+ ((c == cL) ->
-					%		askCloseDoor(dLI)
-					%		. askCloseDoor(dLO)
-					%		. askCloseDoor(dH )
-					%	<>
-					%		nop1 % Empty else statement ???
-					%	)
-					%	+ ((c == cH) ->
-					%		askCloseDoor(dH )
-					%	<>
-					%		nop1 % Empty else statement ???
-					%	)
-					%)
 					
 					(
 						((c == cI) ->
@@ -237,30 +172,6 @@ proc
 							askCloseDoor(dH )
 						)
 					)
-					
-			%		(
-			%			((c == cI) -> 
-			%				askCloseDoor(dAI)
-			%				. askCloseDoor(dLI)
-			%			<>
-			%				((c == cO) -> 
-			%					askCloseDoor(dAO)
-			%					. askCloseDoor(dLO)
-			%				<>
-			%					((c == cL) -> 
-			%						askCloseDoor(dLI)
-			%						. askCloseDoor(dLO)
-			%						. askCloseDoor(dH )
-			%					<>
-			%						((c == cH) -> 
-			%							askCloseDoor(dH )
-			%						<>
-			%							nop1 % Empty else statement ???
-			%						)
-			%					)
-			%				)
-			%			)
-			%		)
 					. s_pressure_set_request(c, p)
 					. s_Pressure_Confirmed(c)
 					. Pressure_Controller(c)
@@ -270,7 +181,7 @@ proc
 	);
 
 	Door_State_Controller(status: Door -> DoorState) = (
-		sum d: Door, s: DoorState . r_door_status_request(d) . s_door_status_response(d, status(d)) . Door_State_Controller()
+		sum d: Door, s: DoorState . s_door_status_response(d, status(d)) . Door_State_Controller()
 		+
 		sum d: Door, s: DoorState . r_door_set_request(d, s) . Door_State_Controller(status[d -> s])
 	);
@@ -284,7 +195,7 @@ proc
 
 
 
-	askCloseDoor(d:Door) = s_door_status_request(d). (r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC));
+	askCloseDoor(d:Door) = r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC);
 	
 	Door_Controller(d:Door) = (
 	%	if door is in requested state -> confirm
@@ -295,7 +206,6 @@ proc
 		sum s:DoorState.
 		(
 			r_Set_Door(d, s)
-			. s_door_status_request(d)
 			. sum ds:DoorState.
 			(
 				r_door_status_response(d, ds)
@@ -313,8 +223,7 @@ proc
 	%					sum c:Chamber.
 	%					(					
 	%						((c in d2c(d)) ->
-	%							s_pressure_status_request(c)
-	%							. (sum p:Pressure.
+	%							(sum p:Pressure.
 	%							(
 	%								r_pressure_status_response(c, p)
 	%								. ((d2p(d) != p) ->
@@ -330,8 +239,7 @@ proc
 						
 	%					
 	%					((c in d2c(d)) ->
-	%						s_pressure_status_request(c)
-	%						. (sum p:Pressure.
+	%						(sum p:Pressure.
 	%						(
 	%							r_pressure_status_response(c, p)
 	%							. ((d2p(d) != p) ->
@@ -345,8 +253,7 @@ proc
 						
 		%				(
 		%					((d == dAI) ->
-		%						s_pressure_status_request(cI)
-		%						. (sum p:Pressure.
+		%						(sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cI, p)
 		%							. ((d2p(d) != p) ->
@@ -360,8 +267,7 @@ proc
 		%						nop3 % Empty else statement ???
 		%					)
 		%					+ ((d == dAO) ->
-		%						s_pressure_status_request(cO)
-		%						. (sum p:Pressure.
+		%						(sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cO, p)
 		%							. ((d2p(d) != p) ->
@@ -375,8 +281,7 @@ proc
 		%						nop3 % Empty else statement ???
 		%					)
 		%					+ ((d == dLI) ->
-		%						s_pressure_status_request(cI)
-		%						. (sum p:Pressure.
+		%						(sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cI, p)
 		%							. ((d2p(d) != p) ->
@@ -386,7 +291,6 @@ proc
 		%								nop2 % Empty else statement ???
 		%							)
 		%						))
-		%						. s_pressure_status_request(cL)
 		%						. (sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cL, p)
@@ -401,8 +305,7 @@ proc
 		%						nop3 % Empty else statement ???
 		%					)
 		%					+ ((d == dLO) ->
-		%						s_pressure_status_request(cL)
-		%						. (sum p:Pressure.
+		%						(sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cL, p)
 		%							. ((d2p(d) != p) ->
@@ -412,7 +315,6 @@ proc
 		%								nop2 % Empty else statement ???
 		%							)
 		%						))
-		%						. s_pressure_status_request(cO)
 		%						. (sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cO, p)
@@ -427,8 +329,7 @@ proc
 		%						nop3 % Empty else statement ???
 		%					)
 		%					+ ((d == dH ) ->
-		%						s_pressure_status_request(cL)
-		%						. (sum p:Pressure.
+		%						(sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cL, p)
 		%							. ((d2p(d) != p) ->
@@ -438,7 +339,6 @@ proc
 		%								nop2 % Empty else statement ???
 		%							)
 		%						))
-		%						. s_pressure_status_request(cH)
 		%						. (sum p:Pressure.
 		%						(
 		%							r_pressure_status_response(cH, p)
@@ -457,8 +357,7 @@ proc
 						
 						(
 							((d == dAI) ->
-								s_pressure_status_request(cI)
-								. (sum p:Pressure.
+								(sum p:Pressure.
 								(
 									r_pressure_status_response(cI, p)
 									. ((d2p(d) != p) ->
@@ -470,8 +369,7 @@ proc
 								))
 							<>
 								((d == dAO) ->
-									s_pressure_status_request(cO)
-									. (sum p:Pressure.
+									(sum p:Pressure.
 									(
 										r_pressure_status_response(cO, p)
 										. ((d2p(d) != p) ->
@@ -483,8 +381,7 @@ proc
 									))
 								<>
 									((d == dLI) ->
-										s_pressure_status_request(cI)
-										. (sum p:Pressure.
+										(sum p:Pressure.
 										(
 											r_pressure_status_response(cI, p)
 											. ((d2p(d) != p) ->
@@ -494,7 +391,6 @@ proc
 												nop2 % Empty else statement ???
 											)
 										))
-										. s_pressure_status_request(cL)
 										. (sum p:Pressure.
 										(
 											r_pressure_status_response(cL, p)
@@ -507,8 +403,7 @@ proc
 										))
 									<>
 										((d == dLO) ->
-											s_pressure_status_request(cL)
-											. (sum p:Pressure.
+											(sum p:Pressure.
 											(
 												r_pressure_status_response(cL, p)
 												. ((d2p(d) != p) ->
@@ -518,7 +413,6 @@ proc
 													nop2 % Empty else statement ???
 												)
 											))
-											. s_pressure_status_request(cO)
 											. (sum p:Pressure.
 											(
 												r_pressure_status_response(cO, p)
@@ -531,8 +425,7 @@ proc
 											))
 										<>
 											((d == dH ) ->
-												s_pressure_status_request(cL)
-												. (sum p:Pressure.
+												(sum p:Pressure.
 												(
 													r_pressure_status_response(cL, p)
 													. ((d2p(d) != p) ->
@@ -542,7 +435,6 @@ proc
 														nop2 % Empty else statement ???
 													)
 												))
-												. s_pressure_status_request(cH)
 												. (sum p:Pressure.
 												(
 													r_pressure_status_response(cH, p)
@@ -572,7 +464,7 @@ proc
 	);
 
 	Robot_State_Controller(status: Robot -> Action) = (
-		sum r: Robot, a: Action . r_robot_status_request(r) . s_robot_status_response(r, status(r)) . Robot_State_Controller()
+		sum r: Robot, a: Action . s_robot_status_response(r, status(r)) . Robot_State_Controller()
 		+
 		sum r: Robot, a: Action . r_robot_set_request(r, a) . Robot_State_Controller(status[r -> a])
 	);
@@ -665,11 +557,8 @@ proc
 
 init
 	hide({
-		%c_door_status_request,
 		%c_door_status_response,
-		%c_pressure_status_request,
 		%c_pressure_status_response,
-		%c_robot_status_request,
 		%c_robot_status_response,
 		nop
 	},
@@ -694,17 +583,11 @@ init
 		sysFinished,
 
 
-		%s_door_status_request,
 		%s_door_status_response,
-		%s_pressure_status_request,
 		%s_pressure_status_response,
-		%s_robot_status_request,
 		%s_robot_status_response,
-		c_door_status_request,
 		c_door_status_response,
-		c_pressure_status_request,
 		c_pressure_status_response,
-		c_robot_status_request,
 		c_robot_status_response,
 
 		c_door_set_request,
@@ -719,11 +602,8 @@ init
 		s_Pressure_Confirmed  		| r_Pressure_Confirmed 		-> c_Pressure_Confirmed,
 		s_Move 						| r_Move		 			-> c_Move,
 		s_Move_Confirmed	  		| r_Move_Confirmed 			-> c_Move_Confirmed,
-		s_door_status_request 		| r_door_status_request		-> c_door_status_request,
 		s_door_status_response 		| r_door_status_response	-> c_door_status_response,
-		s_pressure_status_request 	| r_pressure_status_request	-> c_pressure_status_request,
 		s_pressure_status_response 	| r_pressure_status_response-> c_pressure_status_response,
-		s_robot_status_request	 	| r_robot_status_request	-> c_robot_status_request,
 		s_robot_status_response 	| r_robot_status_response	-> c_robot_status_response,
 
 		s_door_set_request		 	| r_door_set_request		-> c_door_set_request,
