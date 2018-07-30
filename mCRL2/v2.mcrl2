@@ -124,58 +124,52 @@ act
 
 proc
 
-	Pressure_State_Controller(status: Chamber -> Pressure) = (
-		sum c: Chamber, p: Pressure . s_pressure_status_response(c, status(c)) . Pressure_State_Controller()
-		+
-		sum c: Chamber, p: Pressure . r_pressure_set_request(c, p) . Pressure_State_Controller(status[c -> p])
-	);
-	Pressure_Controller(c:Chamber) = (
+	Pressure_Controller(c:Chamber, status:Pressure) = (
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
-
-		sum p: Pressure.
-		(
-			r_Set_Pressure(c, p)
-			. sum ps:Pressure.
-			(
-				r_pressure_status_response(c, ps)
-				. ((p == ps) -> % if p == pstate -> confirm
-					s_Pressure_Confirmed(c)
-					. Pressure_Controller(c)
-				<>
-	%				(sum d:Door.
-	%				(
-	%					((d in c2d(c)) ->
-	%						askCloseDoor(d)
-	%					%<>
-	%					%	nop1 % Empty else statement ???
-	%					)
-	%				))
-					
-					(
-						((c == cI) ->
-							askCloseDoor(dAI)
-							. askCloseDoor(dLI)
-						)
-						+ ((c == cO) ->
-							askCloseDoor(dAO)
-							. askCloseDoor(dLO)
-						)
 		
-						+ ((c == cL) ->
-							askCloseDoor(dLI)
-							. askCloseDoor(dLO)
-							. askCloseDoor(dH )
-						)
-						+ ((c == cH) ->
-							askCloseDoor(dH )
-						)
+		sum p:Pressure.
+		(
+			s_pressure_status_response(c, status) . Pressure_Controller()
+			+
+			r_pressure_set_request(c, p) . Pressure_Controller(c, p)
+			+
+			r_Set_Pressure(c, p)
+			. ((p == status) -> % if p == pstate -> confirm
+					s_Pressure_Confirmed(c)
+					. Pressure_Controller()
+			<>
+	%			(sum d:Door.
+	%			(
+	%				((d in c2d(c)) ->
+	%					askCloseDoor(d)
+	%				%<>
+	%				%	nop1 % Empty else statement ???
+	%				)
+	%			))
+					
+				(
+					((c == cI) ->
+						askCloseDoor(dAI)
+						. askCloseDoor(dLI)
 					)
-					. s_pressure_set_request(c, p)
-					. s_Pressure_Confirmed(c)
-					. Pressure_Controller(c)
+					+ ((c == cO) ->
+						askCloseDoor(dAO)
+						. askCloseDoor(dLO)
+					)
+		
+					+ ((c == cL) ->
+						askCloseDoor(dLI)
+						. askCloseDoor(dLO)
+						. askCloseDoor(dH )
+					)
+					+ ((c == cH) ->
+						askCloseDoor(dH )
+					)
 				)
+				. s_Pressure_Confirmed(c)
+				. Pressure_Controller(c, p)
 			)
 		)
 	);
@@ -613,11 +607,11 @@ init
 
 	},
     %Transport_Controller(5) ||
-	Pressure_State_Controller(pressuresStart) ||
-	Pressure_Controller(cI) ||
-	Pressure_Controller(cO) ||
-	Pressure_Controller(cL) ||
-	Pressure_Controller(cH) ||
+	%Pressure_State_Controller(pressuresStart) ||
+	Pressure_Controller(cI, pA) ||
+	Pressure_Controller(cO, pL) ||
+	Pressure_Controller(cL, pL) ||
+	Pressure_Controller(cH, pH) ||
 	Door_State_Controller(doorsStart) ||
 	Door_Controller(dAI) ||
 	Door_Controller(dAO) ||
