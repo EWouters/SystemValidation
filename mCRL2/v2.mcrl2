@@ -5,30 +5,24 @@ sort
 	Robot = struct rI | rO | rT;
 	DoorState = struct sO | sC;
 	Action = struct aG | aR;
-	WaferStatus   = struct wN | wP;
+%	WaferStatus   = struct wN | wP;
 
 map
-	pressuresStart: Chamber -> Pressure;
 	doorsStart: Door -> DoorState;
-	actionsStart: Robot -> Action;
 
-	%c2d: Chamber -> List(Door); % get list of doors connected to chamber
-	%d2c: Door -> List(Chamber); % get list of chambers connected to door
+%	c2d: Chamber -> List(Door); % get list of doors connected to chamber
+%	d2c: Door -> List(Chamber); % get list of chambers connected to door
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
-	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
-	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
-	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
+%	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
+%	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
+%	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
 	
 var
-	chamber: Chamber;
 	door: Door;
-	robot: Robot;
 
 eqn
-	pressuresStart(chamber) = pA;
 	doorsStart(door) = sC;
-	actionsStart(robot) = aR;
 
 	%c2d(cI) = [dAI, dLI];
 	%c2d(cO) = [dAO, dLO];
@@ -57,42 +51,32 @@ eqn
 	cr2d(cH, rO) = dH;  %
 	cr2d(cT, rT) = dAO;
 
-	%cs2c(cT, wP) = cT; % ????????
-	cs2c(cT, wN) = cI;
-	cs2c(cI, wP) = cT;
-	cs2c(cL, wN) = cH;
-	cs2c(cL, wP) = cO;
-	cs2c(cH, wN) = cL; % ????????
-	cs2c(cH, wP) = cL;
-	cs2c(cO, wN) = cL;
-	cs2c(cO, wP) = cT;
+%	%cs2c(cT, wP) = cT; % ????????
+%	cs2c(cT, wN) = cI;
+%	cs2c(cI, wP) = cT;
+%	cs2c(cL, wN) = cH;
+%	cs2c(cL, wP) = cO;
+%	cs2c(cH, wN) = cL; % ????????
+%	cs2c(cH, wP) = cL;
+%	cs2c(cO, wN) = cL;
+%	cs2c(cO, wP) = cT;
 
-	c2c2r(cT,cI) = rT;
-	c2c2r(cI,cL) = rI;
-	c2c2r(cL,cH) = rI;
-	c2c2r(cH,cL) = rO;
-	c2c2r(cL,cO) = rO;
-	c2c2r(cO,cT) = rT;
+%	c2c2r(cT,cI) = rT;
+%	c2c2r(cI,cL) = rI;
+%	c2c2r(cL,cH) = rI;
+%	c2c2r(cH,cL) = rO;
+%	c2c2r(cL,cO) = rO;
+%	c2c2r(cO,cT) = rT;
 
-	c2c2a(cT,cI) = aR;
-	c2c2a(cI,cL) = aG;
-	c2c2a(cL,cH) = aR;
-	c2c2a(cH,cL) = aG;
-	c2c2a(cL,cO) = aR;
-	c2c2a(cO,cT) = aG;
-	
-	
-	
-	
+%	c2c2a(cT,cI) = aR;
+%	c2c2a(cI,cL) = aG;
+%	c2c2a(cL,cH) = aR;
+%	c2c2a(cH,cL) = aG;
+%	c2c2a(cL,cO) = aR;
+%	c2c2a(cO,cT) = aG;
 	
 
 act
-	nop1,
-	nop2,
-	nop3,
-	nop4,
-	nop5,
-	nop6,
 	nop, Yay;
 
 
@@ -175,7 +159,7 @@ proc
 	);
 	
 	
-	askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status_response(c, p) . ((d2p(d) != p) -> s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) <> nop2 )));
+	askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status_response(c, p) . ((d2p(d) != p) -> s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) <> nop )));
 	
 	askCloseDoor(d:Door) = r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC);
 	
@@ -254,12 +238,6 @@ Door_Controller(d:Door) = (
 			)
 		)
 	);
-	
-	%Robot_State_Controller(status: Robot -> Action) = (
-	%	sum r: Robot, a: Action . s_robot_status_response(r, status(r)) . Robot_State_Controller()
-	%	+
-	%	sum r: Robot, a: Action . r_robot_set_request(r, a) . Robot_State_Controller(status[r -> a])
-	%);
 
 	Robot_Controller(r:Robot, status:Action) = (
 	%	if robot unoccupied ->
@@ -286,32 +264,32 @@ Door_Controller(d:Door) = (
 		)
 	);
 
-	Wafer_Controller(c:Chamber, ws: WaferStatus) = (
-
-	%cs2c
-	%c2c2r
-	%c2c2a
-
-	%nc = cs2c(c, ws)
-	%a = c2c2a(c, nc)
-	%r = c2c2r(c, nc)
-
-	%s_Move(r, c, a)
-
-	%	sum c:Chamber, ws: WaferStatus.
-	%	(
-			((c == cT && ws == wP) ->
-				AskMove(rT, cT, aR)
-				. s_wafer_out
-			<>
-				AskMove(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
-				. Wafer_Controller(cs2c(c, ws), ws)
-				%. Wafer_Controller(cT, wP)
-			)
-	%	)
-	);
+%	Wafer_Controller1(c:Chamber, ws: WaferStatus) = (
+%
+%	%cs2c
+%	%c2c2r
+%	%c2c2a
+%
+%	%nc = cs2c(c, ws)
+%	%a = c2c2a(c, nc)
+%	%r = c2c2r(c, nc)
+%
+%	%s_Move(r, c, a)
+%
+%	%	sum c:Chamber, ws: WaferStatus.
+%	%	(
+%			((c == cT && ws == wP) ->
+%				AskMove(rT, cT, aR)
+%				. s_wafer_out
+%			<>
+%				AskMove(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
+%				. Wafer_Controller(cs2c(c, ws), ws)
+%				%. Wafer_Controller(cT, wP)
+%			)
+%	%	)
+%	);
 	
-	Wafer_Controller2 = (
+	Wafer_Controller = (
 		s_Move(rT, cI, aR)
 		. r_Move_Confirmed(rT)
 		. AskMove(rI, cI, aG)
@@ -323,16 +301,16 @@ Door_Controller(d:Door) = (
 		. s_wafer_out
 	);
 	
-	Wafer_Controller2b = (
-		AskMove(rT, cI, aR)
-		. AskMove(rI, cI, aG)
-		. AskMove(rI, cH, aR)
-		. AskMove(rO, cH, aG)
-		. AskMove(rO, cO, aR)
-		. AskMove(rT, cO, aG)
-		. s_robot_set_request(rT, aR)
-		. s_wafer_out
-	);
+%	Wafer_Controller2 = (
+%		AskMove(rT, cI, aR)
+%		. AskMove(rI, cI, aG)
+%		. AskMove(rI, cH, aR)
+%		. AskMove(rO, cH, aG)
+%		. AskMove(rO, cO, aR)
+%		. AskMove(rT, cO, aG)
+%		. s_robot_set_request(rT, aR)
+%		. s_wafer_out
+%	);
 	
 %	Wafer_Controller3 = (
 %		s_Set_Door(dLI, sO)
@@ -355,7 +333,10 @@ Door_Controller(d:Door) = (
 		. s_wafer_out
 	);
 
-
+	Transport_Controller = (
+		Wafer_Controller || Wafer_Controller || Wafer_Controller
+		. sysFinished
+	);
 
 	%Transport_Controller(numWafers: Int) = (
 	%	((numWafers > 0) ->
@@ -370,18 +351,12 @@ Door_Controller(d:Door) = (
 
 init
 	hide({
-		%c_door_status_response,
-		%c_pressure_status_response,
-		%c_robot_status_response,
+		c_door_status_response,
+		c_pressure_status_response,
+		c_robot_status_response,
 		nop
 	},
 	allow({
-		nop1,
-		nop2,
-		nop3,
-		nop4,
-		nop5,
-		nop6,
 		nop,
 		Yay,
 		c_Set_Pressure,
@@ -403,8 +378,7 @@ init
 		c_pressure_status_response,
 		c_robot_status_response,
 
-		c_door_set_request,
-		c_robot_set_request
+		c_door_set_request
 
 	},
 	comm({
@@ -418,13 +392,10 @@ init
 		s_pressure_status_response 	| r_pressure_status_response-> c_pressure_status_response,
 		s_robot_status_response 	| r_robot_status_response	-> c_robot_status_response,
 
-		s_door_set_request		 	| r_door_set_request		-> c_door_set_request,
-		s_robot_set_request			| r_robot_set_request		-> c_robot_set_request
+		s_door_set_request		 	| r_door_set_request		-> c_door_set_request
 
 
 	},
-    %Transport_Controller(5) ||
-	%Pressure_State_Controller(pressuresStart) ||
 	Pressure_Controller(cI, pA) ||
 	Pressure_Controller(cO, pL) ||
 	Pressure_Controller(cL, pL) ||
@@ -435,15 +406,9 @@ init
 	Door_Controller(dLI) ||
 	Door_Controller(dLO) ||
 	Door_Controller(dH ) ||
-	%Robot_State_Controller(actionsStart) ||
 	Robot_Controller(rT, aR) ||
 	Robot_Controller(rI, aR) ||
 	Robot_Controller(rO, aR) ||
-	%Wafer_Controller(cT, wN) ||
-	%Wafer_Controller(cT, wN) %||
-	%Wafer_Controller2 ||
-	Wafer_Controller2
-	%Wafer_Controller4 ||
-	%Wafer_Controller4
+	Transport_Controller
 	))
 );
