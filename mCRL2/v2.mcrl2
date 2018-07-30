@@ -15,6 +15,7 @@ map
 	%c2d: Chamber -> List(Door); % get list of doors connected to chamber
 	%d2c: Door -> List(Chamber); % get list of chambers connected to door
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
+	d2notp: Door -> List(Pressure);
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
 	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
 	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
@@ -46,6 +47,13 @@ eqn
 	d2p(dLI) = pL;
 	d2p(dLO) = pL;
 	d2p(dH ) = pH;
+	
+	
+	d2notp(dAI) = [pL, pH];
+	d2notp(dAO) = [pL, pH];
+	d2notp(dLI) = [pA, pH];
+	d2notp(dLO) = [pA, pH];
+	d2notp(dH ) = [pA, pL];
 
 	cr2d(cI, rI) = dLI; %
 	cr2d(cI, rT) = dAI; %
@@ -158,7 +166,6 @@ proc
 						askCloseDoor(dAO)
 						. askCloseDoor(dLO)
 					)
-		
 					+ ((c == cL) ->
 						askCloseDoor(dLI)
 						. askCloseDoor(dLO)
@@ -186,8 +193,11 @@ proc
 %									s_pressure_status_request(c). (r_pressure_status_response(c, p) . s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) + 
 %																					. ((d2p(d) != p)
 
+	%askSetPressure(d:Door, c:Chamber) = (sum p:d2notp(d). (s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c))) + r_pressure_status_response(c, d2p(d));
 
-
+	
+	askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status_response(c, p) . ((d2p(d) != p) -> s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) <> nop2 )));
+	
 
 	askCloseDoor(d:Door) = r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC);
 	
@@ -349,102 +359,55 @@ proc
 		%					
 		%				)
 						
+			%			(
+			%				((d == dAI) ->
+			%					askSetPressure(d, cI)
+			%				<>
+			%					((d == dAO) ->
+			%						askSetPressure(d, cO)
+			%					<>
+			%						((d == dLI) ->
+			%							askSetPressure(d, cI)
+			%							. askSetPressure(d, cL)
+			%						<>
+			%							((d == dLO) ->
+			%								askSetPressure(d, cL)
+			%								. askSetPressure(d, cO)
+			%							<>
+			%								((d == dH ) ->
+			%									askSetPressure(d, cL)
+			%									. askSetPressure(d, cH)
+			%								<>
+			%									nop3 % Empty else statement ???
+			%								)
+			%							)
+			%						)
+			%					)
+			%				)
+			%			)
+						
 						(
 							((d == dAI) ->
-								(sum p:Pressure.
-								(
-									r_pressure_status_response(cI, p)
-									. ((d2p(d) != p) ->
-										s_Set_Pressure(cI, d2p(d))
-										. r_Pressure_Confirmed(cI)
-									<>
-										nop2 % Empty else statement ???
-									)
-								))
-							<>
-								((d == dAO) ->
-									(sum p:Pressure.
-									(
-										r_pressure_status_response(cO, p)
-										. ((d2p(d) != p) ->
-											s_Set_Pressure(cO, d2p(d))
-											. r_Pressure_Confirmed(cO)
-										<>
-											nop2 % Empty else statement ???
-										)
-									))
-								<>
-									((d == dLI) ->
-										(sum p:Pressure.
-										(
-											r_pressure_status_response(cI, p)
-											. ((d2p(d) != p) ->
-												s_Set_Pressure(cI, d2p(d))
-												. r_Pressure_Confirmed(cI)
-											<>
-												nop2 % Empty else statement ???
-											)
-										))
-										. (sum p:Pressure.
-										(
-											r_pressure_status_response(cL, p)
-											. ((d2p(d) != p) ->
-												s_Set_Pressure(cL, d2p(d))
-												. r_Pressure_Confirmed(cL)
-											<>
-												nop2 % Empty else statement ???
-											)
-										))
-									<>
-										((d == dLO) ->
-											(sum p:Pressure.
-											(
-												r_pressure_status_response(cL, p)
-												. ((d2p(d) != p) ->
-													s_Set_Pressure(cL, d2p(d))
-													. r_Pressure_Confirmed(cL)
-												<>
-													nop2 % Empty else statement ???
-												)
-											))
-											. (sum p:Pressure.
-											(
-												r_pressure_status_response(cO, p)
-												. ((d2p(d) != p) ->
-													s_Set_Pressure(cO, d2p(d))
-													. r_Pressure_Confirmed(cO)
-												<>
-													nop2 % Empty else statement ???
-												)
-											))
-										<>
-											((d == dH ) ->
-												(sum p:Pressure.
-												(
-													r_pressure_status_response(cL, p)
-													. ((d2p(d) != p) ->
-														s_Set_Pressure(cL, d2p(d))
-														. r_Pressure_Confirmed(cL)
-													<>
-														nop2 % Empty else statement ???
-													)
-												))
-												. (sum p:Pressure.
-												(
-													r_pressure_status_response(cH, p)
-													. ((d2p(d) != p) ->
-														s_Set_Pressure(cH, d2p(d))
-														. r_Pressure_Confirmed(cH)
-													<>
-														nop2 % Empty else statement ???
-													)
-												))
-											<>
-												nop3 % Empty else statement ???
-											)
-										)
-									)
-								)
+								askSetPressure(d, cI)
+							)
+							+
+							((d == dAO) ->
+									askSetPressure(d, cO)
+							)
+							+
+							((d == dLI) ->
+								askSetPressure(d, cI)
+								. askSetPressure(d, cL)
+							)
+							+
+							((d == dLO) ->
+								askSetPressure(d, cL)
+								. askSetPressure(d, cO)
+							)
+							+
+							((d == dH ) ->
+								askSetPressure(d, cL)
+								. askSetPressure(d, cH)
 							)
 						)
 						
