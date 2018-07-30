@@ -15,7 +15,6 @@ map
 	%c2d: Chamber -> List(Door); % get list of doors connected to chamber
 	%d2c: Door -> List(Chamber); % get list of chambers connected to door
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
-	d2notp: Door -> List(Pressure);
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
 	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
 	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
@@ -47,13 +46,6 @@ eqn
 	d2p(dLI) = pL;
 	d2p(dLO) = pL;
 	d2p(dH ) = pH;
-	
-	
-	d2notp(dAI) = [pL, pH];
-	d2notp(dAO) = [pL, pH];
-	d2notp(dLI) = [pA, pH];
-	d2notp(dLO) = [pA, pH];
-	d2notp(dH ) = [pA, pL];
 
 	cr2d(cI, rI) = dLI; %
 	cr2d(cI, rT) = dAI; %
@@ -127,7 +119,6 @@ act
 	s_robot_status_response, r_robot_status_response, c_robot_status_response: Robot # Action;
 
 	s_door_set_request, r_door_set_request, c_door_set_request: Door # DoorState;
-	s_pressure_set_request, r_pressure_set_request, c_pressure_set_request: Chamber # Pressure;
 	s_robot_set_request, r_robot_set_request, c_robot_set_request: Robot # Action;
 
 proc
@@ -141,21 +132,17 @@ proc
 		(
 			s_pressure_status_response(c, status) . Pressure_Controller()
 			+
-			r_pressure_set_request(c, p) . Pressure_Controller(c, p)
-			+
 			r_Set_Pressure(c, p)
 			. ((p == status) -> % if p == pstate -> confirm
 					s_Pressure_Confirmed(c)
 					. Pressure_Controller()
 			<>
-	%			(sum d:Door.
+	%			sum d:Door.
 	%			(
 	%				((d in c2d(c)) ->
 	%					askCloseDoor(d)
-	%				%<>
-	%				%	nop1 % Empty else statement ???
 	%				)
-	%			))
+	%			)
 					
 				(
 					((c == cI) ->
@@ -188,20 +175,11 @@ proc
 	);
 	
 	
-	
-%	askSetPressure(d:Door, c:Chamber) = s_door_status_request(d). (r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC));
-%									s_pressure_status_request(c). (r_pressure_status_response(c, p) . s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) + 
-%																					. ((d2p(d) != p)
-
-	%askSetPressure(d:Door, c:Chamber) = (sum p:d2notp(d). (s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c))) + r_pressure_status_response(c, d2p(d));
-
-	
 	askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status_response(c, p) . ((d2p(d) != p) -> s_Set_Pressure(c, d2p(d)) . r_Pressure_Confirmed(c) <> nop2 )));
 	
-
 	askCloseDoor(d:Door) = r_door_status_response(d, sO) . s_Set_Door(d, sC) . r_Door_Confirmed(d) + r_door_status_response(d, sC);
 	
-	Door_Controller(d:Door) = (
+Door_Controller(d:Door) = (
 	%	if door is in requested state -> confirm
 	%	elseif door open -> close door, confirm
 	%	elseif pressure is correct -> open door, confirm
@@ -216,175 +194,19 @@ proc
 				. ((ds == s) -> % The door is in the requested state
 					s_Door_Confirmed(d)
 					. Door_Controller(d)
-				<> ((ds == sO) -> % The door is open and must be closed
-					s_door_set_request(d, s)
-					. s_Door_Confirmed(d)
-					. Door_Controller(d)
+				<> 
+					((ds == sO) -> % The door is open and must be closed
+						s_door_set_request(d, s)
+						. s_Door_Confirmed(d)
+						. Door_Controller(d)
 					<> % The door is closed and must be opened
-					
-					
 					
 	%					sum c:Chamber.
 	%					(					
 	%						((c in d2c(d)) ->
-	%							(sum p:Pressure.
-	%							(
-	%								r_pressure_status_response(c, p)
-	%								. ((d2p(d) != p) ->
-	%									s_Set_Pressure(c, d2p(d))
-	%									. r_Pressure_Confirmed(c)
-	%								<>
-	%									nop2 % Empty else statement ???
-	%								)
-	%							))
+	%							askSetPressure(d, c)
 	%						)
 	%					)
-						
-						
-	%					
-	%					((c in d2c(d)) ->
-	%						(sum p:Pressure.
-	%						(
-	%							r_pressure_status_response(c, p)
-	%							. ((d2p(d) != p) ->
-	%								s_Set_Pressure(c, d2p(d))
-	%								. r_Pressure_Confirmed(c)
-	%							<>
-	%								nop2 % Empty else statement ???
-	%							)
-	%						))
-	%					)
-						
-		%				(
-		%					((d == dAI) ->
-		%						(sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cI, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cI, d2p(d))
-		%								. r_Pressure_Confirmed(cI)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%					<>
-		%						nop3 % Empty else statement ???
-		%					)
-		%					+ ((d == dAO) ->
-		%						(sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cO, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cO, d2p(d))
-		%								. r_Pressure_Confirmed(cO)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%					<>
-		%						nop3 % Empty else statement ???
-		%					)
-		%					+ ((d == dLI) ->
-		%						(sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cI, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cI, d2p(d))
-		%								. r_Pressure_Confirmed(cI)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%						. (sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cL, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cL, d2p(d))
-		%								. r_Pressure_Confirmed(cL)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%					<>
-		%						nop3 % Empty else statement ???
-		%					)
-		%					+ ((d == dLO) ->
-		%						(sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cL, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cL, d2p(d))
-		%								. r_Pressure_Confirmed(cL)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%						. (sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cO, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cO, d2p(d))
-		%								. r_Pressure_Confirmed(cO)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%					<>
-		%						nop3 % Empty else statement ???
-		%					)
-		%					+ ((d == dH ) ->
-		%						(sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cL, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cL, d2p(d))
-		%								. r_Pressure_Confirmed(cL)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%						. (sum p:Pressure.
-		%						(
-		%							r_pressure_status_response(cH, p)
-		%							. ((d2p(d) != p) ->
-		%								s_Set_Pressure(cH, d2p(d))
-		%								. r_Pressure_Confirmed(cH)
-		%							<>
-		%								nop2 % Empty else statement ???
-		%							)
-		%						))
-		%					<>
-		%						nop3 % Empty else statement ???
-		%					)
-		%					
-		%				)
-						
-			%			(
-			%				((d == dAI) ->
-			%					askSetPressure(d, cI)
-			%				<>
-			%					((d == dAO) ->
-			%						askSetPressure(d, cO)
-			%					<>
-			%						((d == dLI) ->
-			%							askSetPressure(d, cI)
-			%							. askSetPressure(d, cL)
-			%						<>
-			%							((d == dLO) ->
-			%								askSetPressure(d, cL)
-			%								. askSetPressure(d, cO)
-			%							<>
-			%								((d == dH ) ->
-			%									askSetPressure(d, cL)
-			%									. askSetPressure(d, cH)
-			%								<>
-			%									nop3 % Empty else statement ???
-			%								)
-			%							)
-			%						)
-			%					)
-			%				)
-			%			)
 						
 						(
 							((d == dAI) ->
@@ -420,27 +242,47 @@ proc
 		)
 	);
 
-	Robot_State_Controller(status: Robot -> Action) = (
-		sum r: Robot, a: Action . s_robot_status_response(r, status(r)) . Robot_State_Controller()
-		+
-		sum r: Robot, a: Action . r_robot_set_request(r, a) . Robot_State_Controller(status[r -> a])
+	AskMove(r:Robot, c:Chamber, a:Action) = (
+		sum as:Action.
+		(
+			r_robot_status_response(r, as)
+			. ((a == as) ->
+				AskMove()
+			<>
+				s_Move(r, c, a)
+				. r_Move_Confirmed(r)
+			)
+		)
 	);
+	
+	%Robot_State_Controller(status: Robot -> Action) = (
+	%	sum r: Robot, a: Action . s_robot_status_response(r, status(r)) . Robot_State_Controller()
+	%	+
+	%	sum r: Robot, a: Action . r_robot_set_request(r, a) . Robot_State_Controller(status[r -> a])
+	%);
 
-	Robot_Controller(r:Robot) = (
+	Robot_Controller(r:Robot, status:Action) = (
 	%	if robot unoccupied ->
 	%		if door open -> confirm
 	%		else -> set_door open, wait for confirmation of door, confirm move
 	%	else break wafer
 
-		sum a:Action, c:Chamber.
+		sum a:Action.
 		(
-			r_Move(r, c, a)
-			% Open the required door for the robot
-			. s_Set_Door(cr2d(c, r), sO)
-			. r_Door_Confirmed(cr2d(c, r))
-			. s_Move_Confirmed(r)
-			%. s_Set_Door(cr2d(c, r), sC)
-			. Robot_Controller(r)
+			s_robot_status_response(r, status) . Robot_Controller()
+			+
+			r_robot_set_request(r, a) . Robot_Controller(r, a)
+			+
+			sum c:Chamber.
+			(
+				r_Move(r, c, a)
+				% Open the required door for the robot
+				. s_Set_Door(cr2d(c, r), sO)
+				. r_Door_Confirmed(cr2d(c, r))
+				. s_Move_Confirmed(r)
+				%. s_Set_Door(cr2d(c, r), sC)
+				. Robot_Controller(r, a)
+			)
 		)
 	);
 
@@ -459,12 +301,10 @@ proc
 	%	sum c:Chamber, ws: WaferStatus.
 	%	(
 			((c == cT && ws == wP) ->
-				s_Move(rT, cT, aR)
-				. r_Move_Confirmed(rT)
+				AskMove(rT, cT, aR)
 				. s_wafer_out
 			<>
-				s_Move(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
-				. r_Move_Confirmed(c2c2r(c, cs2c(c, ws)))
+				AskMove(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
 				. Wafer_Controller(cs2c(c, ws), ws)
 				%. Wafer_Controller(cT, wP)
 			)
@@ -474,16 +314,23 @@ proc
 	Wafer_Controller2 = (
 		s_Move(rT, cI, aR)
 		. r_Move_Confirmed(rT)
-		. s_Move(rI, cI, aG)
-		. r_Move_Confirmed(rI)
-		. s_Move(rI, cH, aR)
-		. r_Move_Confirmed(rI)
-		. s_Move(rO, cH, aG)
-		. r_Move_Confirmed(rO)
-		. s_Move(rO, cO, aR)
-		. r_Move_Confirmed(rO)
+		. AskMove(rI, cI, aG)
+		. AskMove(rI, cH, aR)
+		. AskMove(rO, cH, aG)
+		. AskMove(rO, cO, aR)
 		. s_Move(rT, cO, aG)
 		. r_Move_Confirmed(rT)
+		. s_wafer_out
+	);
+	
+	Wafer_Controller2b = (
+		AskMove(rT, cI, aR)
+		. AskMove(rI, cI, aG)
+		. AskMove(rI, cH, aR)
+		. AskMove(rO, cH, aG)
+		. AskMove(rO, cO, aR)
+		. AskMove(rT, cO, aG)
+		. s_robot_set_request(rT, aR)
 		. s_wafer_out
 	);
 	
@@ -498,6 +345,15 @@ proc
 %		%. s_Set_Door(dLI, sC)
 %		%. r_Door_Confirmed(dLI)
 %	);
+
+	Wafer_Controller4 = (
+		s_Move(rT, cI, aR)
+		. r_Move_Confirmed(rT)
+		. AskMove(rI, cI, aG)
+		. s_Move(rT, cO, aG)
+		. r_Move_Confirmed(rT)
+		. s_wafer_out
+	);
 
 
 
@@ -548,7 +404,6 @@ init
 		c_robot_status_response,
 
 		c_door_set_request,
-		c_pressure_set_request,
 		c_robot_set_request
 
 	},
@@ -564,7 +419,6 @@ init
 		s_robot_status_response 	| r_robot_status_response	-> c_robot_status_response,
 
 		s_door_set_request		 	| r_door_set_request		-> c_door_set_request,
-		s_pressure_set_request		| r_pressure_set_request	-> c_pressure_set_request,
 		s_robot_set_request			| r_robot_set_request		-> c_robot_set_request
 
 
@@ -582,13 +436,14 @@ init
 	Door_Controller(dLO) ||
 	Door_Controller(dH ) ||
 	%Robot_State_Controller(actionsStart) ||
-	Robot_Controller(rT) ||
-	Robot_Controller(rI) ||
-	Robot_Controller(rO) ||
+	Robot_Controller(rT, aR) ||
+	Robot_Controller(rI, aR) ||
+	Robot_Controller(rO, aR) ||
 	%Wafer_Controller(cT, wN) ||
 	%Wafer_Controller(cT, wN) %||
 	%Wafer_Controller2 ||
-	%Wafer_Controller2 ||
 	Wafer_Controller2
+	%Wafer_Controller4 ||
+	%Wafer_Controller4
 	))
 );
