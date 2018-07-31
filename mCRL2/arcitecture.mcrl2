@@ -118,6 +118,8 @@ act
 
 	s_pressure_request, r_pressure_request, c_pressure_request: Chamber # Pressure;
 	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber;
+	s_pressure_lock, r_pressure_lock, c_pressure_lock: Chamber # Bool;
+	s_pressure_locked, r_pressure_locked, c_pressure_locked: Chamber # Bool;
 
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
 	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot;
@@ -132,53 +134,73 @@ act
 
 proc
 
-	pressureController(c:Chamber, status:Pressure) = (%, locked:Bool) = (
+	
+	Set_Pressure(c:Chamber, p:Pressure) = (
+		sum locked:Bool.
+		(
+			s_pressure_locked(c, locked)
+			. ((locked) ->
+				Set_Pressure()
+			<>
+				s_pressure_lock(c, true)
+				. s_pressure_request(c, p)
+				. r_pressure_confirmed(c)
+			)
+		)
+	);
+
+	pressureController(c:Chamber, status:Pressure, locked:Bool) = (
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
 		
-		%((!locked) ->
-		%	r_pressure_unlock(c) . pressureController(c, p)
-		%)
-		
-		
-		sum p:Pressure.
-		(
-			%s_pressure_status(c, status) . pressureController()
-			%+
-			r_pressure_request(c, p)
-			. ((p == status) -> % if p == pstate -> confirm
-					s_pressure_confirmed(c)
-					. pressureController()
-			<>
-	%			sum d:Door.
-	%			(
-	%				((d in c2d(c)) ->
-	%					askCloseDoor(d)
-	%				)
-	%			)
-					
-				(
-					((c == cI) ->
-						askCloseDoor(dAI)
-						. askCloseDoor(dLI)
+		s_pressure_locked(c, locked) . pressureController()
+		+
+		((locked) ->
+			(r_pressure_lock(c, false) . pressureController(c, status, false)
+			+
+			sum p:Pressure.	
+			(
+				%s_pressure_status(c, status) . pressureController()
+				%+
+				r_pressure_request(c, p)
+				. ((p == status) -> % if p == pstate -> confirm
+						s_pressure_confirmed(c)
+						. pressureController()
+				<>
+		%			sum d:Door.
+		%			(
+		%				((d in c2d(c)) ->
+		%					askCloseDoor(d)
+		%				)
+		%			)
+						
+					(
+						((c == cI) ->
+							askCloseDoor(dAI)
+							. askCloseDoor(dLI)
+						)
+						+ ((c == cO) ->
+							askCloseDoor(dAO)
+							. askCloseDoor(dLO)
+						)
+						+ ((c == cL) ->
+							askCloseDoor(dLI)
+							. askCloseDoor(dLO)
+							. askCloseDoor(dH )
+						)
+						+ ((c == cH) ->
+							askCloseDoor(dH )
+						)
 					)
-					+ ((c == cO) ->
-						askCloseDoor(dAO)
-						. askCloseDoor(dLO)
-					)
-					+ ((c == cL) ->
-						askCloseDoor(dLI)
-						. askCloseDoor(dLO)
-						. askCloseDoor(dH )
-					)
-					+ ((c == cH) ->
-						askCloseDoor(dH )
-					)
+					. s_pressure_confirmed(c)
+					. pressureController(c, p, locked)
 				)
-				. s_pressure_confirmed(c)
-				. pressureController(c, p)
-			)
+			))
+		<>
+			r_pressure_lock(c, true) . pressureController(c, status, true)
+			%+
+			%r_pressure_request(c, p) . Set_Pressure(c, p) . pressureController()
 		)
 	);
 
@@ -196,7 +218,6 @@ proc
 	askSetPressure(d:Door, c:Chamber) = s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c);
 	
 	askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_lock(d, true) . s_door_request(d, sC) . r_door_confirmed(d) . s_door_lock(d, false) + r_door_status(d, sC);
-	%askCloseDoor(d:Door) = r_door_status(d, sO) . nop2 . s_door_lock(d, true) . nop3 . s_door_request(d, sC) . r_door_confirmed(d) . s_door_lock(d, false) + r_door_status(d, sC);
 	%askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_lock(d, true) . s_door_request(d, sC) . r_door_confirmed(d) + r_door_status(d, sC);
 	%askCloseDoor(d:Door) = s_door_request(d, sC) . r_door_confirmed(d);
 	
@@ -418,10 +439,10 @@ hide(
 				s_door_lock				| r_door_lock			-> c_door_lock
 
 			},
-			pressureController(cI, pA) ||
-			pressureController(cO, pL) ||
-			pressureController(cL, pL) ||
-			pressureController(cH, pH) ||
+			pressureController(cI, pA, false) ||
+			pressureController(cO, pL, false) ||
+			pressureController(cL, pL, false) ||
+			pressureController(cH, pH, false) ||
 			doorStateController(doorsStart) ||
 			doorController(dAI) ||
 			doorController(dAO) ||
