@@ -327,6 +327,7 @@ proc
 		. s_move_request(rT, cO, aG)
 		. r_move_confirmed(rT)
 %		. wafer_out
+		. waferController
 	);
 	
 	waferController5 = (
@@ -372,11 +373,7 @@ proc
 	);
 
 	transportController = (
-		%waferController1(cT, wN) %|| waferController5 || waferController5
-		%waferController5 %|| waferController5 %|| waferController5
-		waferController %|| waferController || waferController || waferController || waferController
-%		. system_finished
-		. transportController
+		waferController || waferController %|| waferController %|| waferController || waferController
 	);
 
 	%transportController(numWafers: Int) = (
