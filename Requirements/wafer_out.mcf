@@ -1,3 +1,7 @@
 % No deadlock can occur
 
-[true*]<true>true
+%[true*]<true>true
+
+%mu X. [!wafer_out(0)] X
+
+mu X. [!nop4] X

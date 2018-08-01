@@ -37,7 +37,7 @@ act
 	nop5;
 
 	% external actions
-%	wafer_in;
+	wafer_in;
 	wafer_out;
 	wafer_out: Int;
 
@@ -262,6 +262,47 @@ proc
 		%. waferController
 	);
 	
+	waferController5000000(step:Int) = (
+		((step == 0) ->
+			wafer_in
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 1) ->
+			askMove(rT, cI, aR)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 2) ->
+			askMove(rI, cI, aG)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 3) ->
+			askMove(rI, cH, aR)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 4) ->
+			askMove(rO, cH, aG)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 5) ->
+			askMove(rO, cO, aR)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 6) ->
+			askMove(rT, cO, aG)
+			. waferController5000000(step + 1)
+		)
+		+
+		((step == 7) ->
+			wafer_out
+		)
+	);
+	
 	waferController(i:Int) = (
 %		wafer_in
 		askMove(rT, cI, aR)
@@ -282,6 +323,17 @@ proc
 	transportController1 = (
 		waferController(0) || waferController(1) %|| waferController %|| waferController %|| waferController
 %		. system_finished
+	);
+	
+	transportController2 = (
+		waferController
+		. waferController
+		. waferController %|| waferController %|| waferController
+%		. system_finished
+	);
+	
+	transportController5000000 = (
+		waferController5000000(0) || waferController5000000(0) || waferController5000000(0) || waferController5000000(0) || waferController5000000(0)
 	);
 
 init
@@ -305,7 +357,7 @@ hide(
 			c_door_confirmed,
 			c_move_request,
 			c_move_confirmed,
-%			wafer_in,
+			wafer_in,
 	%		project_wafer,
 			wafer_out,
 %			system_finished,
@@ -348,7 +400,7 @@ hide(
 			robotController(rT, aR) ||
 			robotController(rI, aR) ||
 			robotController(rO, aR) ||
-			transportController1
+			transportController5000000
 		)
 	)
 );
