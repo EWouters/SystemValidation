@@ -119,8 +119,7 @@ act
 
 	s_pressure_request, r_pressure_request, c_pressure_request: Chamber # Pressure;
 	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber;
-	s_pressure_locked, r_pressure_locked, c_pressure_locked: Chamber # Bool;
-	s_pressure_lock, r_pressure_lock, c_pressure_lock: Chamber # Bool;
+	s_pressure_status, r_pressure_status, c_pressure_status: Chamber # Pressure;
 
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
 	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot;
@@ -134,90 +133,60 @@ act
 
 proc
 	Set_Pressure(c:Chamber, p:Pressure) = (
-		sum locked:Bool.
+		sum ps:Pressure.
 		(
-			r_pressure_locked(c, locked)
-			. ((locked) ->
-				Set_Pressure()
-			<>
-				s_pressure_lock(c, true)
-				. s_pressure_request(c, p)
+			r_pressure_status(c, ps)
+			. ((ps != p) ->
+				s_pressure_request(c, p)
 				. r_pressure_confirmed(c)
+			<>
+				nop3
 			)
 		)
 	);
 	
-	pressureController(c:Chamber, status:Pressure, locked:Bool) = (
+	pressureController(c:Chamber, status:Pressure) = (
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
 		
-		s_pressure_locked(c, locked) . pressureController()
+		s_pressure_status(c, status) . pressureController()
 		+
-		((locked) ->
-			% If the pressure status is locked the pressureController can receive an unlock action or a r_pressure_request
-			(r_pressure_lock(c, false) 
-			. (
-				((c == cI) ->
-					s_door_lock(dAI, false)
-					. s_door_lock(dLI, false)
-				)
-				+ ((c == cO) ->
-					s_door_lock(dAO, false)
-					. s_door_lock(dLO, false)
-				)
-				+ ((c == cL) ->
-					s_door_lock(dLI , false)
-					. s_door_lock(dLO, false)
-					. s_door_lock(dH , false)
-				)
-				+ ((c == cH) ->
-					s_door_lock(dH , false)
-				)
-			)
-			. pressureController(c, status, false)
-			+
-			sum p:Pressure.
-			(
-				%s_pressure_status(c, status) . pressureController()
-				%+
-				r_pressure_request(c, p)
-				. ((p == status) -> % if p == pstate -> confirm
-						s_pressure_confirmed(c)
-						. pressureController()
-				<>
-	%				sum d:Door.
-	%				(
-	%					((d in c2d(c)) ->
-	%						Set_Door(d, sC)
-	%					)
-	%				)
-						
-					(
-						((c == cI) ->
-							Set_Door(dAI, sC)
-							. Set_Door(dLI, sC)
-						)
-						+ ((c == cO) ->
-							Set_Door(dAO, sC)
-							. Set_Door(dLO, sC)
-						)
-						+ ((c == cL) ->
-							Set_Door(dLI, sC)
-							. Set_Door(dLO, sC)
-							. Set_Door(dH , sC)
-						)
-						+ ((c == cH) ->
-							Set_Door(dH , sC)
-						)
+		sum p:Pressure.
+		(
+			r_pressure_request(c, p)
+			. ((p == status) -> % if p == pstate -> confirm
+					s_pressure_confirmed(c)
+					. pressureController()
+			<>
+%				sum d:Door.
+%				(
+%					((d in c2d(c)) ->
+%						Set_Door(d, sC)
+%					)
+%				)
+					
+				(
+					((c == cI) ->
+						Set_Door(dAI, sC)
+						. Set_Door(dLI, sC)
 					)
-					. s_pressure_confirmed(c)
-					. pressureController(c, p, locked)
+					+ ((c == cO) ->
+						Set_Door(dAO, sC)
+						. Set_Door(dLO, sC)
+					)
+					+ ((c == cL) ->
+						Set_Door(dLI, sC)
+						. Set_Door(dLO, sC)
+						. Set_Door(dH , sC)
+					)
+					+ ((c == cH) ->
+						Set_Door(dH , sC)
+					)
 				)
-			))
-		<>
-			% If the pressure status is unlocked the pressureController can only receive a lock action, which will lock the pressure status
-			r_pressure_lock(c, true) . pressureController(c, status, true)
+				. s_pressure_confirmed(c)
+				. pressureController(c, p)
+			)
 		)
 	);
 
@@ -268,32 +237,7 @@ proc
 		+
 		((locked) ->
 			% If the door state is locked the doorController can receive an unlock action or a r_door_request
-			(r_door_lock(d, false) 
-			. (
-				((d == dAI) ->
-					s_pressure_lock(cI, false)
-				)
-				+
-				((d == dAO) ->
-					s_pressure_lock(cO, false)
-				)
-				+
-				((d == dLI) ->
-					s_pressure_lock(cI, false)
-					. s_pressure_lock(cL, false)
-				)
-				+
-				((d == dLO) ->
-					s_pressure_lock(cL, false)
-					. s_pressure_lock(cO, false)
-				)
-				+
-				((d == dH ) ->
-					s_pressure_lock(cL, false)
-					. s_pressure_lock(cH, false)
-				)
-			)
-			. doorController(d, false)
+			(r_door_lock(d, false) . doorController(d, false)
 			+
 			sum s:DoorState.
 			(
@@ -336,6 +280,7 @@ proc
 							)
 							. s_door_set(d, s)
 							. s_door_confirmed(d)
+							% Wait here for robot confirmed ???
 							. doorController(d, locked)
 						)
 					)
@@ -464,8 +409,6 @@ hide(
 			nop3,
 			c_pressure_request,
 			c_pressure_confirmed,
-			c_pressure_lock,
-			c_pressure_locked,
 			
 			
 			%s_pressure_request,
@@ -486,8 +429,8 @@ hide(
 
 			c_door_status,
 			
-			%c_pressure_status,
-			c_robot_status,
+			c_pressure_status,
+			%c_robot_status,
 
 			c_door_set
 
@@ -501,23 +444,21 @@ hide(
 				
 				s_pressure_request  	| r_pressure_request 	-> c_pressure_request,
 				s_pressure_confirmed  	| r_pressure_confirmed 	-> c_pressure_confirmed,
-				s_pressure_lock		 	| r_pressure_lock		-> c_pressure_lock,
-				s_pressure_locked		| r_pressure_locked		-> c_pressure_locked,
 				
 				s_move_request 			| r_move_request		-> c_move_request,
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed,
 				
 				s_door_status 			| r_door_status			-> c_door_status,
-				%s_pressure_status 		| r_pressure_status		-> c_pressure_status,
-				s_robot_status 			| r_robot_status		-> c_robot_status,
+				s_pressure_status 		| r_pressure_status		-> c_pressure_status,
+				%s_robot_status 			| r_robot_status		-> c_robot_status,
 
 				s_door_set		 		| r_door_set			-> c_door_set
 
 			},
-			pressureController(cI, pA, false) ||
-			pressureController(cO, pL, false) ||
-			pressureController(cL, pL, false) ||
-			pressureController(cH, pH, false) ||
+			pressureController(cI, pA) ||
+			pressureController(cO, pL) ||
+			pressureController(cL, pL) ||
+			pressureController(cH, pH) ||
 			doorStateController(doorsStart) ||
 			doorController(dAI, false) ||
 			doorController(dAO, false) ||
