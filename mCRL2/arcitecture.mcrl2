@@ -1,40 +1,21 @@
 sort
 	Chamber = struct cI | cO | cL | cH;
-	%Chamber = struct cT | cI | cO | cL | cH;
 	Pressure = struct pA | pL | pH;
 	Door = struct dAI | dAO | dLI | dLO | dH;
 	Robot = struct rI | rO | rT;
 	DoorState = struct sO | sC;
 	Action = struct aG | aR;
-%	WaferStatus   = struct wN | wP;
 
 map
 	doorsStart: Door -> DoorState;
 
-%	c2d: Chamber -> List(Door); % get list of doors connected to chamber
-%	d2c: Door -> List(Chamber); % get list of chambers connected to door
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
-%	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
-%	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
-%	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
-
 var
 	door: Door;
 
 eqn
 	doorsStart(door) = sC;
-
-	%c2d(cI) = [dAI, dLI];
-	%c2d(cO) = [dAO, dLO];
-	%c2d(cL) = [dLI, dLO, dH];
-	%c2d(cH) = [dH];
-
-	%d2c(dAI) = [cI];
-	%d2c(dAO) = [cO];
-	%d2c(dLI) = [cI, cL];
-	%d2c(dLO) = [cL, cO];
-	%d2c(dH ) = [cL, cH];
 
 	d2p(dAI) = pA;
 	d2p(dAO) = pA;
@@ -42,60 +23,12 @@ eqn
 	d2p(dLO) = pL;
 	d2p(dH ) = pH;
 
-	cr2d(cI, rI) = dLI; %
-	cr2d(cI, rT) = dAI; %
-	cr2d(cO, rO) = dLO; %
-	cr2d(cO, rT) = dAO; %
-%	cr2d(cL, rI) = dLI;
-%	cr2d(cL, rO) = dLO;
-	cr2d(cH, rI) = dH;  %
-	cr2d(cH, rO) = dH;  %
-%	cr2d(cT, rT) = dAO;
-	
-%	cr2d(cI, rO) = dLO;
-%	cr2d(cO, rI) = dLI;
-%	cr2d(cH, rT) = dH;
-%	cr2d(cT, rI) = dAI;
-%	cr2d(cT, rO) = dAO;
-%
-%	%cs2c(cT, wP) = cT; % ????????
-%	cs2c(cT, wN) = cI;
-%	cs2c(cI, wP) = cT;
-%	cs2c(cL, wN) = cH;
-%	cs2c(cL, wP) = cO;
-%	cs2c(cH, wN) = cL; % ????????
-%	cs2c(cH, wP) = cL;
-%	cs2c(cO, wN) = cL;
-%	cs2c(cO, wP) = cT;
-%	
-%	cs2c(cI, wN) = cL;
-%
-%	c2c2r(cT,cI) = rT;
-%	c2c2r(cI,cL) = rI;
-%	c2c2r(cL,cH) = rI;
-%	c2c2r(cH,cL) = rO;
-%	c2c2r(cL,cO) = rO;
-%	c2c2r(cO,cT) = rT;
-%	
-%	c2c2r(cI,cT) = rT;
-%	c2c2r(cT,cO) = rO;
-%	c2c2r(cI,cH) = rI;
-%	c2c2r(cH,cI) = rI;
-%	c2c2r(cO,cH) = rO;
-%	c2c2r(cH,cO) = rO;
-%	
-%	c2c2r(cT,cI) = rT;
-%	c2c2r(cO,cL) = rO;
-%
-%	c2c2a(cT,cI) = aR;
-%	c2c2a(cI,cL) = aG;
-%	c2c2a(cL,cH) = aR;
-%	c2c2a(cH,cL) = aG;
-%	c2c2a(cL,cO) = aR;
-%	c2c2a(cO,cT) = aG;
-%	
-%	c2c2a(cI,cT) = aR;
-%	c2c2a(cO,cL) = aG;
+	cr2d(cI, rI) = dLI;
+	cr2d(cI, rT) = dAI;
+	cr2d(cO, rO) = dLO;
+	cr2d(cO, rT) = dAO;
+	cr2d(cH, rI) = dH;
+	cr2d(cH, rO) = dH;
 	
 
 act
@@ -107,9 +40,7 @@ act
 
 	% external actions
 %	wafer_in;
-%	project_wafer;
 	wafer_out;
-%	system_finished;
 
 	% communication actions (s = send, r = receive, c = communicate)
 	s_door_request, r_door_request, c_door_request: Door # DoorState;
@@ -123,13 +54,11 @@ act
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
 	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot;
 
-	
-	%s_pressure_status, r_pressure_status, c_pressure_status: Chamber # Pressure;
-
 	s_robot_status, r_robot_status, c_robot_status: Robot # Action;
+	
+	s_chamber_release, r_chamber_release, c_chamber_release: Chamber;
 
 	s_door_set, r_door_set, c_door_set: Door # DoorState;
-	s_robot_set_request, r_robot_set_request, c_robot_set_request: Robot # Action;
 
 proc
 
@@ -187,12 +116,9 @@ proc
 		)
 	);
 	
-	
-	%askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status(c, p) . ((d2p(d) != p) -> s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c) <> nop )));
 	askSetPressure(d:Door, c:Chamber) = s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c);
 	
 	askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_request(d, sC) . r_door_confirmed(d) + r_door_status(d, sC);
-	%askCloseDoor(d:Door) = s_door_request(d, sC) . r_door_confirmed(d);
 	
 	doorController(d:Door) = (
 	%	if door is in requested state -> confirm
@@ -207,14 +133,10 @@ proc
 			(
 				r_door_status(d, ds)
 				. ((ds == s) -> % The door is in the requested state
-					%s_door_confirmed(d)
-					%. doorController(d)
 					nop
 				<>
 					((ds == sO) -> % The door is open and must be closed
 						s_door_set(d, s)
-						%. s_door_confirmed(d)
-						%. doorController(d)
 					<> % The door is closed and must be opened
 					
 	%					sum c:Chamber.
@@ -248,17 +170,7 @@ proc
 								. askSetPressure(d, cH)
 							)
 						)
-						
 						. s_door_set(d, s)
-						%. s_door_confirmed(d)
-						
-						
-						% Wait here for move confirmed
-						%. r_door_release(d)
-						
-						
-						
-						%. doorController(d)
 					)
 				)
 			)
@@ -273,14 +185,20 @@ proc
 	);
 
 	askMove(r:Robot, c:Chamber, a:Action) = (
-		sum as:Action.
-		(
-			r_robot_status(r, as)
-			. ((a == as) ->
-				askMove()
-			<>
-				s_move_request(r, c, a)
-				. r_move_confirmed(r)
+	
+		((r == rT) ->
+			s_move_request(r, c, a)
+			. r_move_confirmed(r)
+		<>
+			sum as:Action.
+			(
+				r_robot_status(r, as)
+				. ((a == as) ->
+					askMove()
+				<>
+					s_move_request(r, c, a)
+					. r_move_confirmed(r)
+				)
 			)
 		)
 	);
@@ -295,8 +213,6 @@ proc
 		(
 			s_robot_status(r, status) . robotController()
 			+
-			r_robot_set_request(r, a) . robotController(r, a)
-			+
 			sum c:Chamber.
 			(
 				r_move_request(r, c, a)
@@ -305,94 +221,49 @@ proc
 				. r_door_confirmed(cr2d(c, r))
 				. s_move_confirmed(r)
 				. s_door_release(cr2d(c, r))
-				%. s_door_request(cr2d(c, r), sC) % If this is enabled the doors will be closed at the end of a move
+				. (
+					((r == rT && c == cI && a == aR) ->
+						r_chamber_release(c)
+					)
+					+
+					((r == rI && c == cI && a == aG) ->
+						s_chamber_release(c)
+					)
+					+
+					((r == rI && c == cH && a == aR) ->
+						r_chamber_release(c)
+					)
+					+
+					((r == rO && c == cH && a == aG) ->
+						s_chamber_release(c)
+					)
+					+
+					((r == rO && c == cO && a == aR) ->
+						r_chamber_release(c)
+					)
+					+
+					((r == rT && c == cO && a == aG) ->
+						s_chamber_release(c)
+					)
+				)
 				. robotController(r, a)
 			)
 		)
 	);
-
-%	waferController1(c:Chamber, ws: WaferStatus) = (
-%
-%	%cs2c
-%	%c2c2r
-%	%c2c2a
-%
-%	%nc = cs2c(c, ws)
-%	%a = c2c2a(c, nc)
-%	%r = c2c2r(c, nc)
-%
-%	%s_move_request(r, c, a)
-%
-%		sum c:Chamber, ws: WaferStatus.
-%		(
-%			((c == cT && ws == wP) ->
-%				askMove(rT, cT, aR)
-%%				. wafer_out
-%			<>
-%				askMove(c2c2r(c, cs2c(c, ws)), cs2c(c, ws), c2c2a(c, cs2c(c, ws)))
-%				. waferController1(cs2c(c, ws), ws)
-%				%. waferController1(cT, wP)
-%			)
-%		)
-%	);
 	
 	waferController = (
 %		wafer_in
-		s_move_request(rT, cI, aR)
-		. r_move_confirmed(rT)
+		askMove(rT, cI, aR)
 		. askMove(rI, cI, aG)
 		. askMove(rI, cH, aR)
 		. askMove(rO, cH, aG)
 		. askMove(rO, cO, aR)
-		. s_move_request(rT, cO, aG)
-		. r_move_confirmed(rT)
+		. askMove(rT, cO, aG)
 		. wafer_out
-	);
-	
-	waferController5 = (
-%		wafer_in
-		askMove(rI, cI, aG)
-		. askMove(rI, cH, aR)
-%		. wafer_out
-	);
-	
-%	waferController2 = (
-%%		wafer_in
-%		askMove(rT, cI, aR)
-%		. askMove(rI, cI, aG)
-%		. askMove(rI, cH, aR)
-%		. askMove(rO, cH, aG)
-%		. askMove(rO, cO, aR)
-%		. askMove(rT, cO, aG)
-%		. s_robot_set_request(rT, aR)
-%%		. wafer_out
-%	);
-	
-%	waferController3 = (
-%%		wafer_in
-%		s_door_request(dLI, sO)
-%		. r_door_confirmed(dLI)
-%%		. wafer_out
-%		%. s_door_request(dLI, sO)
-%		%. r_door_confirmed(dLI)
-%		%. s_door_request(dAI, sC)
-%		%. r_door_confirmed(dAI)
-%		%. s_door_request(dLI, sC)
-%		%. r_door_confirmed(dLI)
-%	);
-
-	waferController4 = (
-%		wafer_in
-		s_move_request(rT, cI, aR)
-		. r_move_confirmed(rT)
-		. askMove(rI, cI, aG)
-		. s_move_request(rT, cO, aG)
-		. r_move_confirmed(rT)
-%		. wafer_out
 	);
 
 	transportController = (
-		waferController %|| waferController || waferController || waferController || waferController
+		waferController || waferController %|| waferController %|| waferController || waferController
 %		. system_finished
 	);
 
@@ -427,7 +298,8 @@ hide(
 			c_robot_status,
 
 			c_door_set,
-			c_door_release
+			c_door_release,
+			c_chamber_release
 
 		},
 		comm(
@@ -439,11 +311,11 @@ hide(
 				s_move_request 			| r_move_request		-> c_move_request,
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed,
 				s_door_status 			| r_door_status			-> c_door_status,
-				%s_pressure_status 		| r_pressure_status		-> c_pressure_status,
 				s_robot_status 			| r_robot_status		-> c_robot_status,
 
 				s_door_set		 		| r_door_set			-> c_door_set,
-				s_door_release	 		| r_door_release		-> c_door_release
+				s_door_release	 		| r_door_release		-> c_door_release,
+				s_chamber_release	 	| r_chamber_release		-> c_chamber_release
 
 			},
 			pressureController(cI, pA) ||
