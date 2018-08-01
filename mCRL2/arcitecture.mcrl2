@@ -30,29 +30,28 @@ eqn
 	cr2d(cH, rI) = dH;
 	cr2d(cH, rO) = dH;
 	
-
 act
 	nop;
 	nop3;
 	nop4;
 	nop5;
 
-
 	% external actions
 %	wafer_in;
 	wafer_out;
+	wafer_out: Int;
 
 	% communication actions (s = send, r = receive, c = communicate)
 	s_door_request, r_door_request, c_door_request: Door # DoorState;
-	s_door_confirmed, r_door_confirmed, c_door_confirmed: Door;
+	s_door_confirmed, r_door_confirmed, c_door_confirmed: Door # DoorState;
 	s_door_status, r_door_status, c_door_status: Door # DoorState;
 	s_door_release, r_door_release, c_door_release: Door;
 
 	s_pressure_request, r_pressure_request, c_pressure_request: Chamber # Pressure;
-	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber;
+	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber # Pressure;
 
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
-	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot;
+	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot # Action;
 
 	s_robot_status, r_robot_status, c_robot_status: Robot # Action;
 	
@@ -73,7 +72,7 @@ proc
 			%+
 			r_pressure_request(c, p)
 			. ((p == status) -> % if p == pstate -> confirm
-					s_pressure_confirmed(c)
+					s_pressure_confirmed(c, p)
 					. pressureController()
 			<>
 	%			sum d:Door.
@@ -101,7 +100,7 @@ proc
 						askCloseDoor(dH )
 					)
 				)
-				. s_pressure_confirmed(c)
+				. s_pressure_confirmed(c, p)
 				. pressureController(c, p)
 			)
 		)
@@ -116,9 +115,9 @@ proc
 		)
 	);
 	
-	askSetPressure(d:Door, c:Chamber) = s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c);
+	askSetPressure(d:Door, c:Chamber) = s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c, d2p(d));
 	
-	askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_request(d, sC) . r_door_confirmed(d) + r_door_status(d, sC);
+	askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_request(d, sC) . r_door_confirmed(d, sC) + r_door_status(d, sC);
 	
 	doorController(d:Door) = (
 	%	if door is in requested state -> confirm
@@ -133,7 +132,7 @@ proc
 			(
 				r_door_status(d, ds)
 				. ((ds == s) -> % The door is in the requested state
-					nop
+					nop5
 				<>
 					((ds == sO) -> % The door is open and must be closed
 						s_door_set(d, s)
@@ -174,11 +173,11 @@ proc
 					)
 				)
 			)
-			. s_door_confirmed(d)
+			. s_door_confirmed(d, s)
 			. ((s == sO) -> 
 				r_door_release(d)
 			<>
-				nop
+				nop4
 			)
 			. doorController(d)
 		)
@@ -188,7 +187,7 @@ proc
 	
 		((r == rT) ->
 			s_move_request(r, c, a)
-			. r_move_confirmed(r)
+			. r_move_confirmed(r, a)
 		<>
 			sum as:Action.
 			(
@@ -197,7 +196,7 @@ proc
 					askMove()
 				<>
 					s_move_request(r, c, a)
-					. r_move_confirmed(r)
+					. r_move_confirmed(r, a)
 				)
 			)
 		)
@@ -218,8 +217,8 @@ proc
 				r_move_request(r, c, a)
 				% Open the required door for the robot
 				. s_door_request(cr2d(c, r), sO)
-				. r_door_confirmed(cr2d(c, r))
-				. s_move_confirmed(r)
+				. r_door_confirmed(cr2d(c, r), sO)
+				. s_move_confirmed(r, a)
 				. s_door_release(cr2d(c, r))
 				. (
 					((r == rT && c == cI && a == aR) ->
@@ -260,10 +259,28 @@ proc
 		. askMove(rO, cO, aR)
 		. askMove(rT, cO, aG)
 		. wafer_out
+		%. waferController
+	);
+	
+	waferController(i:Int) = (
+%		wafer_in
+		askMove(rT, cI, aR)
+		. askMove(rI, cI, aG)
+		. askMove(rI, cH, aR)
+		. askMove(rO, cH, aG)
+		. askMove(rO, cO, aR)
+		. askMove(rT, cO, aG)
+		. wafer_out(i)
+		%. waferController(i)
 	);
 
 	transportController = (
-		waferController || waferController %|| waferController %|| waferController || waferController
+		waferController || waferController %|| waferController %|| waferController %|| waferController
+%		. system_finished
+	);
+	
+	transportController1 = (
+		waferController(0) || waferController(1) %|| waferController %|| waferController %|| waferController
 %		. system_finished
 	);
 
@@ -331,7 +348,7 @@ hide(
 			robotController(rT, aR) ||
 			robotController(rI, aR) ||
 			robotController(rO, aR) ||
-			transportController
+			transportController1
 		)
 	)
 );
