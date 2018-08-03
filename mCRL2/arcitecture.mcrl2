@@ -35,6 +35,7 @@ act
 	nop3;
 	nop4;
 	nop5;
+	BUG5000000;
 
 	% external actions
 	wafer_in;
@@ -202,6 +203,85 @@ proc
 
 		sum s:DoorState.
 		(
+%			r_door_request(c, r, s)
+%			. sum ds:DoorState.
+%			
+%			
+%							sum c:Chamber, r:Robot, ds:DoorState.
+%							(
+%							((ds == sO) ->
+%								r_door_request(c, r, ds)
+%								. s_door_request(cr2d(c, r), ds)
+%								. r_door_release(c, r)
+%								. s_door_release(cr2d(c, r))
+%								. specialDH
+%							)
+%			
+%			
+%			
+%			
+%			(
+%				r_door_status(d, ds)
+%				. ((ds == s) -> % The door is in the requested state
+%					nop5
+%				<>
+%					((ds == sO) -> % The door is open and must be closed
+%						s_door_set(d, s)
+%					<> % The door is closed and must be opened
+%					
+%	%					sum c:Chamber.
+%	%					(					
+%	%						((c in d2c(d)) ->
+%	%							askSetPressure(d, c)
+%	%						)
+%	%					)
+%						
+%						(
+%							((d == dAI) ->
+%								askSetPressure(d, cI)
+%							)
+%							+
+%							((d == dAO) ->
+%								askSetPressure(d, cO)
+%							)
+%							+
+%							((d == dLI) ->
+%								askSetPressure(d, cI)
+%								. askSetPressure(d, cL)
+%							)
+%							+
+%							((d == dLO) ->
+%								askSetPressure(d, cL)
+%								. askSetPressure(d, cO)
+%							)
+%							+
+%							((d == dH ) ->
+%								askSetPressure(d, cL)
+%								. askSetPressure(d, cH)
+%							)
+%						)
+%						. s_door_set(d, s)
+%					)
+%				)
+%				. s_door_confirmed(d, s)
+%				. ((s == sO) ->
+%					nop3
+%					. r_door_release(d)
+%					. doorController(d)
+%					% The dH can be locked by both robots! BUG
+%				<>
+%					doorController(d)
+%					%nop4
+%				)
+%				%. doorController(d)
+%			)
+%			
+%			
+%			
+%			
+%			+
+			
+			
 			r_door_request(d, s)
 			. sum ds:DoorState.
 			(
@@ -219,6 +299,33 @@ proc
 	%							askSetPressure(d, c)
 	%						)
 	%					)
+						
+%						(
+%							((d == dAI) ->
+%								askSetPressure(d, cI)
+%							)
+%							+
+%							((d == dAO) ->
+%								askSetPressure(d, cO)
+%							)
+%							+
+%							((d == dLI) ->
+%								s_pressure_request(cI, d2p(d)) |  s_pressure_request(cL, d2p(d))
+%								. r_pressure_confirmed(cI, d2p(d)) |  r_pressure_confirmed(cL, d2p(d))
+%							)
+%							+
+%							((d == dLO) ->
+%								s_pressure_request(cL, d2p(d)) |  s_pressure_request(cO, d2p(d))
+%								. r_pressure_confirmed(cL, d2p(d)) |  r_pressure_confirmed(cO, d2p(d))
+%							)
+%							+
+%							((d == dH ) ->
+%								s_pressure_request(cL, d2p(d)) |  s_pressure_request(cH, d2p(d))
+%								. r_pressure_confirmed(cL, d2p(d)) |  r_pressure_confirmed(cH, d2p(d))
+%							)
+%						)
+						
+						
 						
 						(
 							((d == dAI) ->
@@ -244,12 +351,16 @@ proc
 								. askSetPressure(d, cH)
 							)
 						)
+						
+						
+						
 						. s_door_set(d, s)
 					)
 				)
 				. s_door_confirmed(d, s)
 				. ((s == sO) ->
-					r_door_release(d)
+					nop3
+					. r_door_release(d)
 					. doorController(d)
 					% The dH can be locked by both robots! BUG
 				<>
@@ -258,54 +369,28 @@ proc
 				)
 				%. doorController(d)
 			)
+			
+			
+			
+			
+			
+			
 		)
 	);
 	
 	
-	
-	
-				
-	specialDH = (
-		sum c:Chamber, r:Robot, ds:DoorState.
-		(
-			((ds == sO && c == cH && r != rT) ->
-				r_door_request(cH, r, ds)
-				. s_door_request(dH, ds)
-				. r_door_release(cH, r)
-				. s_door_release(dH)
-			<>
-				((ds == sO) ->
-					r_door_request(c, r, ds)
-					. s_door_request(cr2d(c, r), ds)
-					. r_door_release(c, r)
-					. s_door_release(cr2d(c, r))
-				<>
-					nop3
-				)
-			)
-		)
-		. specialDH
-	
-	
-	
-	
-	
-	
-		%sum c:Chamber, r:Robot.
-		%(
-		%	r_door_request(c, r, sO)
-		%	.((cr2d(c, r) == dH) ->
-		%		((r == rI) ->
-		%			r_door_request(cr2d(c, r), sO)
-		%		)
-		%		+
-		%		((r == rO) ->
-		%			
-		%		)
-		%	)
-		%)
-	);
-	
+	%specialDH = (
+	%	sum c:Chamber, r:Robot, ds:DoorState.
+	%	(
+	%		((ds == sO) ->
+	%			r_door_request(c, r, ds)
+	%			. s_door_request(cr2d(c, r), ds)
+	%			. r_door_release(c, r)
+	%			. s_door_release(cr2d(c, r))
+	%			. specialDH
+	%		)
+	%	)
+	%);
 	
 	flag(f:Bool) = (
 		s_flag(f) . flag()
@@ -328,36 +413,28 @@ proc
 				. ((a == as) ->
 					askMove()
 				<>
-					%sum f:Bool.
-					%(
-					%	r_flag(f)
-					%	. ((f) ->
-					%		((r == rI && c == cH && a == aR) ->
-					%			askMove()
-					%		<>
-					%			((r == rO && c == cH && a == aG) ->
-					%				s_flag_set(false)
-					%			<>
-					%				nop
-					%			)
-					%			. s_move_request(r, c, a)
-					%			. r_move_confirmed(r, a)
-					%		)
-					%	<>
-					%		((r == rI && c == cH && a == aR) ->
-					%			s_flag_set(true)
-					%		<>
-					%			((r == rO && c == cH && a == aG) ->
-					%				askMove()
-					%			<>
-					%				s_move_request(r, c, a)
-					%				. r_move_confirmed(r, a)
-					%			)
-					%		)
-					%	)
-					%)
-					s_move_request(r, c, a)
-					. r_move_confirmed(r, a)
+					sum f:Bool.
+					(
+						r_flag(f)
+						. ((f && r == rI && c == cH && a == aR) ->
+							askMove()
+						<>
+							((!f && r == rI && c == cH && a == aR) ->
+								s_flag_set(true)
+								. s_move_request(r, c, a)
+								. r_move_confirmed(r, a)
+							<>
+								((f && r == rO && c == cH && a == aG) ->
+									s_move_request(r, c, a)
+									. r_move_confirmed(r, a)
+									. s_flag_set(false)
+								<>
+									s_move_request(r, c, a)
+									. r_move_confirmed(r, a)
+								)
+							)
+						)
+					)
 				)
 			)
 		)
@@ -393,11 +470,13 @@ proc
 					)
 					+
 					((r == rI && c == cH && a == aR) ->
-						r_chamber_release(c)
+						%r_chamber_release(c)
+						BUG5000000
 					)
 					+
 					((r == rO && c == cH && a == aG) ->
-						s_chamber_release(c)
+						%s_chamber_release(c)
+						BUG5000000
 					)
 					+
 					((r == rO && c == cO && a == aR) ->
@@ -422,7 +501,7 @@ proc
 		. askMove(rO, cO, aR)
 		. askMove(rT, cO, aG)
 		. wafer_out
-		. waferController
+		%. waferController
 	);
 	
 	waferController(i:Int) = (
@@ -434,7 +513,7 @@ proc
 		. askMove(rO, cO, aR)
 		. askMove(rT, cO, aG)
 		. wafer_out(i)
-		. waferController(i)
+		%. waferController(i)
 	);
 
 	transportController = (
@@ -442,7 +521,7 @@ proc
 	);
 	
 	transportController1 = (
-		waferController(0) || waferController(1) || waferController(2) %|| waferController(3) || waferController(4)
+		waferController(0) || waferController(1) || waferController(2) || waferController(3) || waferController(4)
 	);
 
 init
@@ -459,6 +538,7 @@ hide(
 			nop3,
 			nop4,
 			nop5,
+			BUG5000000,
 			c_pressure_request,
 			c_pressure_confirmed,
 			c_door_request,
@@ -469,6 +549,10 @@ hide(
 	%		project_wafer,
 			wafer_out,
 %			system_finished,
+
+
+			%s_pressure_request|s_pressure_request,
+			%r_pressure_confirmed|r_pressure_confirmed,
 
 			c_door_status,
 			c_robot_status,
@@ -500,7 +584,7 @@ hide(
 				s_flag_set		 		| r_flag_set			-> c_flag_set
 
 			},
-			%flag(false) ||
+			flag(false) ||
 			%specialDH ||
 			pressureController(cI, pA) ||
 			pressureController(cO, pL) ||

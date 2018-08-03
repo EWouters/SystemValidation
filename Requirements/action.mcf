@@ -1,0 +1,12 @@
+% Any actions can happen, then nop3 then any actions
+%<true*> <nop3> true
+
+
+[true*] <!wafer_out(1)> true
+
+%% nop4 never occurs
+%<true*> <nop3> true
+
+
+
+%mu X. <!wafer_out(1)> X
