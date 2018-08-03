@@ -37,7 +37,7 @@ act
 	nop5;
 
 	% external actions
-%	wafer_in;
+	wafer_in;
 	wafer_out;
 	wafer_out: Int;
 
@@ -58,6 +58,11 @@ act
 	s_chamber_release, r_chamber_release, c_chamber_release: Chamber;
 
 	s_door_set, r_door_set, c_door_set: Door # DoorState;
+	
+	
+	
+	s_flag, r_flag, c_flag: Bool;
+	s_flag_set, r_flag_set, c_flag_set: Bool;
 
 proc
 
@@ -176,10 +181,22 @@ proc
 			. s_door_confirmed(d, s)
 			. ((s == sO) ->
 				r_door_release(d)
+				. doorController(d)
+				% The dH can be locked by both robots! BUG
 			<>
-				nop4
+				doorController(d)
+				%nop4
 			)
-			. doorController(d)
+			%. doorController(d)
+		)
+	);
+	
+	flag(f:Bool) = (
+		s_flag(f) . flag()
+		+
+		sum state:Bool.
+		(
+			r_flag_set(state) . flag(state)
 		)
 	);
 
@@ -195,6 +212,34 @@ proc
 				. ((a == as) ->
 					askMove()
 				<>
+					%sum f:Bool.
+					%(
+					%	r_flag(f)
+					%	. ((f) ->
+					%		((r == rI && c == cH && a == aR) ->
+					%			askMove()
+					%		<>
+					%			((r == rO && c == cH && a == aG) ->
+					%				s_flag_set(false)
+					%			<>
+					%				nop
+					%			)
+					%			. s_move_request(r, c, a)
+					%			. r_move_confirmed(r, a)
+					%		)
+					%	<>
+					%		((r == rI && c == cH && a == aR) ->
+					%			s_flag_set(true)
+					%		<>
+					%			((r == rO && c == cH && a == aG) ->
+					%				askMove()
+					%			<>
+					%				s_move_request(r, c, a)
+					%				. r_move_confirmed(r, a)
+					%			)
+					%		)
+					%	)
+					%)
 					s_move_request(r, c, a)
 					. r_move_confirmed(r, a)
 				)
@@ -259,7 +304,7 @@ proc
 		. askMove(rO, cO, aR)
 		. askMove(rT, cO, aG)
 		. wafer_out
-		%. waferController
+		. waferController
 	);
 
 	waferController(i:Int) = (
@@ -275,20 +320,17 @@ proc
 	);
 
 	transportController = (
-		waferController || waferController %|| waferController %|| waferController %|| waferController
-%		. system_finished
+		waferController %|| waferController %|| waferController || waferController %|| waferController
 	);
 
 	transportController1 = (
-		waferController(0) || waferController(1) %|| waferController %|| waferController %|| waferController
-%		. system_finished
+		waferController(0) || waferController(1) %|| waferController(2) || waferController(3) || waferController(4)
 	);
 
 init
 hide(
 	{
 		%c_door_status,
-		%%c_pressure_status,
 		%c_robot_status,
 		%c_door_set,
 		nop
@@ -305,19 +347,20 @@ hide(
 			c_door_confirmed,
 			c_move_request,
 			c_move_confirmed,
-%			wafer_in,
+			wafer_in,
 	%		project_wafer,
 			wafer_out,
 %			system_finished,
 
 			c_door_status,
-			%c_pressure_status,
 			c_robot_status,
 
 			c_door_set,
 			c_door_release,
-			c_chamber_release
-
+			c_chamber_release,
+			
+			c_flag,
+			c_flag_set
 		},
 		comm(
 			{
@@ -332,9 +375,14 @@ hide(
 
 				s_door_set		 		| r_door_set			-> c_door_set,
 				s_door_release	 		| r_door_release		-> c_door_release,
-				s_chamber_release	 	| r_chamber_release		-> c_chamber_release
+				s_chamber_release	 	| r_chamber_release		-> c_chamber_release,
+				
+				
+				s_flag			 		| r_flag				-> c_flag,
+				s_flag_set		 		| r_flag_set			-> c_flag_set
 
 			},
+			%flag(false) ||
 			pressureController(cI, pA) ||
 			pressureController(cO, pL) ||
 			pressureController(cL, pL) ||
