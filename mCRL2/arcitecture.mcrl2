@@ -29,7 +29,7 @@ eqn
 	cr2d(cO, rT) = dAO;
 	cr2d(cH, rI) = dH;
 	cr2d(cH, rO) = dH;
-	
+
 act
 	nop;
 	nop3;
@@ -54,7 +54,7 @@ act
 	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot # Action;
 
 	s_robot_status, r_robot_status, c_robot_status: Robot # Action;
-	
+
 	s_chamber_release, r_chamber_release, c_chamber_release: Chamber;
 
 	s_door_set, r_door_set, c_door_set: Door # DoorState;
@@ -65,7 +65,7 @@ proc
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
-		
+
 		sum p:Pressure.
 		(
 			%s_pressure_status(c, status) . pressureController()
@@ -81,7 +81,7 @@ proc
 	%					askCloseDoor(d)
 	%				)
 	%			)
-					
+
 				(
 					((c == cI) ->
 						askCloseDoor(dAI)
@@ -107,18 +107,18 @@ proc
 	);
 
 	doorStateController(status: Door -> DoorState) = (
-		sum d: Door, s: DoorState. 
+		sum d: Door, s: DoorState.
 		(
 			s_door_status(d, status(d)) . doorStateController()
 		+
 			r_door_set(d, s) . doorStateController(status[d -> s])
 		)
 	);
-	
+
 	askSetPressure(d:Door, c:Chamber) = s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c, d2p(d));
-	
+
 	askCloseDoor(d:Door) = r_door_status(d, sO) . s_door_request(d, sC) . r_door_confirmed(d, sC) + r_door_status(d, sC);
-	
+
 	doorController(d:Door) = (
 	%	if door is in requested state -> confirm
 	%	elseif door open -> close door, confirm
@@ -137,14 +137,14 @@ proc
 					((ds == sO) -> % The door is open and must be closed
 						s_door_set(d, s)
 					<> % The door is closed and must be opened
-					
+
 	%					sum c:Chamber.
-	%					(					
+	%					(
 	%						((c in d2c(d)) ->
 	%							askSetPressure(d, c)
 	%						)
 	%					)
-						
+
 						(
 							((d == dAI) ->
 								askSetPressure(d, cI)
@@ -174,7 +174,7 @@ proc
 				)
 			)
 			. s_door_confirmed(d, s)
-			. ((s == sO) -> 
+			. ((s == sO) ->
 				r_door_release(d)
 			<>
 				nop4
@@ -184,7 +184,7 @@ proc
 	);
 
 	askMove(r:Robot, c:Chamber, a:Action) = (
-	
+
 		((r == rT) ->
 			s_move_request(r, c, a)
 			. r_move_confirmed(r, a)
@@ -249,7 +249,7 @@ proc
 			)
 		)
 	);
-	
+
 	waferController = (
 %		wafer_in
 		askMove(rT, cI, aR)
@@ -261,7 +261,7 @@ proc
 		. wafer_out
 		%. waferController
 	);
-	
+
 	waferController(i:Int) = (
 %		wafer_in
 		askMove(rT, cI, aR)
@@ -278,7 +278,7 @@ proc
 		waferController || waferController %|| waferController %|| waferController %|| waferController
 %		. system_finished
 	);
-	
+
 	transportController1 = (
 		waferController(0) || waferController(1) %|| waferController %|| waferController %|| waferController
 %		. system_finished
