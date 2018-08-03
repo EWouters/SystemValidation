@@ -1,0 +1,5 @@
+%% "There can only be one wafer at a time in the high vacuum chamber."
+
+[true*] mu X .
+	[c_move_confirmed(rI, aR) . (!c_move_confirmed(rO, aG))* . c_move_confirmed(rI, aR)]
+	false
