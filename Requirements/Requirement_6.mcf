@@ -1,5 +1,10 @@
-%% "There can only be one wafer at a time in the high vacuum chamber."
+%% "There can be only two wafers at a time in the low vacuum chamber."
 
-[true*] mu X .
-	[c_move_confirmed(rI, aR) . (!c_move_confirmed(rO, aG))* . c_move_confirmed(rI, aR)]
-	false
+nu X (wafer_in_low : Bool = false) . ([!wafer_in || wafer_out] X(wafer_in_low)
+&& [wafer_in] X(true)
+&& [wafer_out] X(false)
+&& (!wafer_in_low => mu Y [!wafer_in] Y && <true>true)
+&& (wafer_in_low => mu Y [!wafer_out] Y && <true>true)
+
+%% Need "wafer_in_low" to have the form of "Chamber == CI", thought using
+%% "forall" seems problematic
