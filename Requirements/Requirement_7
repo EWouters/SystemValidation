@@ -1,0 +1,6 @@
+nu X (m: Bool = false, p: Bool = false) . (
+  [!(measure U process)] X (m,p)
+  && [measure] X (true, p)
+  && [process] X (m, true)
+  && (( m && p ) -> mu Y ([!wafer_out) Y
+  && <true>true))
