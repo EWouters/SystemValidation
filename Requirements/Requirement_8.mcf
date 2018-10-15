@@ -1,0 +1,3 @@
+forall d:Door . ([true*.door_set(d, sO))] . 
+  mu X . ([!move_confirm] X
+  ^ <true>true))
