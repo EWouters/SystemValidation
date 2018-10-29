@@ -2,8 +2,8 @@
 
 nu X (wafer_in_low: Nat = 0) . (
   [wafer_in] wafer_in_low < 2 
-  ^ X (wafer_in_low + 1)
-  ^ [wafer_out] X (wafer_in_low - 1)
-  ^ [wafer_to_high] X (wafer_in_low - 1)
-  ^ [wafer_from_high] wafer_in_low < 2]
-  ^ X (wafer_in_low + 1)
+  && X (wafer_in_low + 1)
+  && [wafer_out] X (wafer_in_low - 1)
+  && [wafer_to_high] X (wafer_in_low - 1)
+  && [wafer_from_high] wafer_in_low < 2]
+  && X (wafer_in_low + 1)
