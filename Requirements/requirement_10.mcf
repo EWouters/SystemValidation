@@ -1,0 +1,6 @@
+%% "Robots cannot be instructed to push a wafer through a closed door."
+
+%% NB: Can also be interpreted as:
+%% "Between a robot_move and a door_close, the door_open action must happen."
+
+[true* . robot_move . !door_close* . door_open]false
