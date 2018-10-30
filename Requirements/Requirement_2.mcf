@@ -1,0 +1,8 @@
+%% "Any sluice can have at most one door open at a time."
+%% Can be reinterpreted as:
+%% "Between any two door_open actions, a door_close action must occur."
+
+[true* . 
+    exist ( id1 : Nat ) . door_open( id1 ) .
+    (exist ( id2 : Nat ) . door_close( id2 ))* .
+    exist ( id3 : Nat ) . door_open( id3 )]false
