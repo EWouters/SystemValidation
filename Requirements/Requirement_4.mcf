@@ -4,9 +4,9 @@
 
 [true* .
   exist( id1 : Nat ) . wafer_in( id1 ) .
-  (exist( id1 : Nat ) robot_move( id1 )* .
+  (exist( id1 : Nat ) robot_move( id1 ))* .
   exist( id2 : Nat ) . wafer_in( id2 )] false
   && [true* . 
   exist( id1 : Nat ) . robot_move( id1 ) .
-  (exist( id1 : Nat ) wafer_out( id1 )* .
+  (exist( id1 : Nat ) wafer_out( id1 ))* .
   exist( id2 : Nat ) . robot_move( id2 )] false
