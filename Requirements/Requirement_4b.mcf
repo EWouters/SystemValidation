@@ -1,0 +1,34 @@
+%% There can be only one wafer at a time in each sluice.
+
+%% This can be broken into two requirements for wafer_in and wafer_out
+
+%% Before a Set Door(dA,I,sO) action can happen a Move(rI,cI,aG)
+%% action followed by Move Confirmed(rI) must happen without a
+%% Set Door(dA,I,sC) in between.
+
+%% and Before a Move(rO,cO,aR) action can happen a Wafer Out
+%% must happen, without a Move(rO,cO,aR) in between.
+
+
+nu X(b1:Bool = true, b2:Bool = true) . (
+  [move(rI, cI, aG)] X(false,b2) &&
+  [move(rO, cO, aR)] X(b1,false) &&
+
+  [move_confirmed(rI)] X(true,b2) &&
+  [move_confirmed(rO)] X(b1,true) &&
+
+  forall i:Door .
+	[set_door(i, sO)] (val(b1 && b2) &&
+	X(b1, b2)) &&
+
+  [!(
+	forall j:Door . (
+	  set_door(j, sC) ||
+	  move_confirmed(j)
+	) ||
+        forall i:Door . set_door(i,sO)
+	)] X(b1, b2) 
+
+  || [true* . move(rO, cO, aR) . !move(rO, cO, aG)* . 
+      wafer_out]false
+)
