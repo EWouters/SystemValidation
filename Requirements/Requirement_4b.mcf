@@ -6,7 +6,7 @@
 %% action followed by Move Confirmed(rI) must happen without a
 %% Set Door(dA,I,sC) in between.
 
-%% and Before a Move(rO,cO,aR) action can happen a Wafer Out
+%% and Before a Move(rO,cL,aG) action can happen a Wafer Out
 %% must happen, without a Move(rO,cO,aR) in between.
 
 
@@ -29,6 +29,6 @@ nu X(b1:Bool = true, b2:Bool = true) . (
         forall i:Door . set_door(i,sO)
 	)] X(b1, b2) 
 
-  || [true* . move(rO, cO, aR) . !move(rO, cO, aG)* . 
+  || [true* . move(rO, cO, aR) . !move(rO, cL, aG)* . 
       wafer_out]false
 )
