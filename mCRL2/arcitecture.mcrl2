@@ -363,6 +363,7 @@ proc
 		. s_door_lock(cr2d(cI, rT), false)
 		. Move(rI, cI, aG)
 		. Move(rI, cH, aR)
+		. project_wafer
 		. Move(rO, cH, aG)
 		. Move(rO, cO, aR)
 		. s_move_request(rT, cO, aG)
@@ -381,7 +382,7 @@ proc
 	);
 	
 	transportController = (
-		wafer_in . wafer_out . wafer_in . wafer_out
+		wafer_in . wafer_out . project_wafer . wafer_in . wafer_out
 		%waferController %|| waferController %|| waferController || waferController %|| waferController || waferController || waferController || waferController
 	);
 
@@ -426,7 +427,7 @@ hide(
 			c_move_request,
 			c_move_confirmed,
 			wafer_in,
-	%		project_wafer,
+			project_wafer,
 			wafer_out,
 %			system_finished,
 

@@ -29,3 +29,12 @@ nu X(n:Int=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]
 % Test case true : wafer_in . wafer_in . wafer_out . wafer_out
 % Test case false: wafer_in . wafer_out . wafer_out
 % Test case false: wafer_in . wafer_in . wafer_out
+
+
+% Future test cases:
+% Test case false: wafer_in . wafer_out . project_wafer . wafer_in . wafer_out
+% Test case false: wafer_in . project_wafer . wafer_out . project_wafer . wafer_in . wafer_out
+% Test case false: project_wafer . wafer_in . wafer_out
+% Test case false: wafer_in . wafer_out . project_wafer
+
+% Test case true : wafer_in . project_wafer . wafer_out
