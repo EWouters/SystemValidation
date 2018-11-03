@@ -3,10 +3,10 @@
 %% This can be broken into two requirements for wafer_in and wafer_out
 
 [true* .
-  exist( id1 : Nat ) . wafer_in( id1 ) .
-  (exist( id1 : Nat ) robot_move( id1 ))* .
-  exist( id2 : Nat ) . wafer_in( id2 )] false
+  exists( id1 : Nat ) . wafer_in( id1 ) .
+  (exists( id1 : Nat ) robot_move( id1 ))* .
+  exists( id2 : Nat ) . wafer_in( id2 )] false
   && [true* . 
-  exist( id1 : Nat ) . robot_move( id1 ) .
-  (exist( id1 : Nat ) wafer_out( id1 ))* .
-  exist( id2 : Nat ) . robot_move( id2 )] false
+  exists( id1 : Nat ) . robot_move( id1 ) .
+  (exists( id1 : Nat ) wafer_out( id1 ))* .
+  exists( id2 : Nat ) . robot_move( id2 )] false
