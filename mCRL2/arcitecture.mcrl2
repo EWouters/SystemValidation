@@ -46,17 +46,19 @@ eqn
 	cr2d(cI, rT) = dAI; %
 	cr2d(cO, rO) = dLO; %
 	cr2d(cO, rT) = dAO; %
-%	cr2d(cL, rI) = dLI;
-%	cr2d(cL, rO) = dLO;
+	cr2d(cL, rT) = dLI;
+	cr2d(cL, rI) = dLI;
+	cr2d(cL, rO) = dLO;
 	cr2d(cH, rI) = dH;  %
 	cr2d(cH, rO) = dH;  %
 %	cr2d(cT, rT) = dAO;
 	
-%	cr2d(cI, rO) = dLO;
-%	cr2d(cO, rI) = dLI;
-%	cr2d(cH, rT) = dH;
+	cr2d(cI, rO) = dLO;
+	cr2d(cO, rI) = dLI;
+	cr2d(cH, rT) = dH;
 %	cr2d(cT, rI) = dAI;
 %	cr2d(cT, rO) = dAO;
+
 %
 %	%cs2c(cT, wP) = cT; % ????????
 %	cs2c(cT, wN) = cI;
