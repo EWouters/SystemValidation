@@ -10,3 +10,5 @@
 [true*.c_door_confirmed(dH , sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dH , sC)]false && % dH
 [true*.c_door_confirmed(dLO, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dLO, sC)]false && % dLO
 [true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO
+
+% Counter example: c_door_confirmed(dAI, sO) . c_door_confirmed(dAI, sC)

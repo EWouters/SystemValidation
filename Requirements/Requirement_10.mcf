@@ -8,3 +8,6 @@ forall c:Chamber,r:Robot,a:Action.
 [(!c_door_confirmed(cr2d(c, r), sO))*.c_move_confirmed(r, c, a)]false &&
 % Between a door_close and a robot_move a door_open must happen
 [true* . c_door_confirmed(cr2d(c, r), sC) . (!c_door_confirmed(cr2d(c, r), sO))* . c_move_confirmed(r, c, a)]false
+
+% Counter example part one: c_move_confirmed(rT, cI, aR)
+% Counter example part two: c_door_confirmed(cr2d(rT, cI), sC) . c_move_confirmed(rT, cI, aR)

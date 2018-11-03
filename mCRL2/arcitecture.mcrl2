@@ -381,7 +381,8 @@ proc
 	);
 	
 	transportController = (
-		waferController || waferController || waferController %|| waferController %|| waferController || waferController || waferController || waferController
+		wafer_in . wafer_out . wafer_in . wafer_out
+		%waferController %|| waferController %|| waferController || waferController %|| waferController || waferController || waferController || waferController
 	);
 
 	%transportController(numWafers: Int) = (

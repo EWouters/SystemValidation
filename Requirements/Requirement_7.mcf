@@ -3,8 +3,8 @@
 % This requirement has two parts, one is that all wafers that enter must exit, the second is that it must be measured and processed before it exits. Due to the paralelism in our architecture we cannot guarantee that each wafer is processed and measured. What we can do is guarantee that the same number of enter, process and exit actions occur. In a similar way it is also not possible to guarantee that each individual wafer exits, because of our design dicision to process (not the best word) the wafers in parallel and to not give them an id.
 
 
-nu X(n:Nat=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]X(Int2Nat(n-1)) &&
-  mu Y(m:Nat=n).(val(m==0) || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(Int2Nat(m-1)))))
+nu X(n:Int=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]X(n-1) &&
+  mu Y(m:Int=n).(val(m>=0) || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(m-1)) && <true>true))
 
 %nu X(n:Nat=0).([!(wafer_in || wafer_out)].X(n) && [wafer_in].X(n+1) && [wafer_out].X(n-1) &&
 %  mu Y(m:Nat=n).((m==0) || ([!(wafer_in || wafer_out)].Y(m) && [wafer_in].Y(m+1) && [wafer_out].Y(m-1))))
@@ -14,7 +14,7 @@ nu X(n:Nat=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]
 %  mu Y(m:Nat=n).(m==0) || ([!(wafer_in || wafer_out)].Y(m) && [wafer_in].Y(m+1) && [wafer_out].Y(m-1) && <true>true)
 
 
-
+%<true* . wafer_out>true
 
 
 %nu X (m: Bool = false, p: Bool = false) . (
@@ -23,3 +23,9 @@ nu X(n:Nat=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]
 %  && [process] X (m, true)
 %  && (( m && p ) -> mu Y ([!wafer_out) Y
 %  && <true>true))
+
+
+% Test case true : wafer_in . wafer_out . wafer_in . wafer_out
+% Test case true : wafer_in . wafer_in . wafer_out . wafer_out
+% Test case false: wafer_in . wafer_out . wafer_out
+% Test case false: wafer_in . wafer_in . wafer_out
