@@ -1,0 +1,5 @@
+%% "When a door opens, a wafer must go through."
+
+forall d:Door . ([true*.door_set(d, sO)] 
+  mu X . ([!move_confirmed] X
+  && <true>true))
