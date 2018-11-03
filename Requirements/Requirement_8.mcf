@@ -1,3 +1,12 @@
 %% "When a door opens, a wafer must go through."
 
-forall c:Chamber,r:Robot,a:Action.[true*.c_door_confirmed(cr2d(c, r), sO).(!c_move_confirmed(r, c, a))*.c_door_confirmed(cr2d(c, r), sO)]false % all doors
+%forall c:Chamber,r:Robot,a:Action.[true*.c_door_confirmed(cr2d(c, r), sO).(!c_move_confirmed(r, c, a))*.c_door_confirmed(cr2d(c, r), sO)]false % all doors
+
+% Due to not all doors being connected to all rooms the above does not work. To make the above work we need to add some equasions. It is easier to use the below.
+
+
+[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
+[true*.c_door_confirmed(dLI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dLI, sC)]false && % dLI
+[true*.c_door_confirmed(dH , sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dH , sC)]false && % dH
+[true*.c_door_confirmed(dLO, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dLO, sC)]false && % dLO
+[true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO

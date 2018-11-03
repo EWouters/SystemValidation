@@ -108,7 +108,7 @@ act
 
 	% external actions
 	wafer_in;
-%	project_wafer;
+	project_wafer;
 	wafer_out;
 %	system_finished;
 
@@ -381,7 +381,7 @@ proc
 	);
 	
 	transportController = (
-		waferController %|| waferController %|| waferController || waferController || waferController
+		waferController || waferController || waferController %|| waferController %|| waferController || waferController || waferController || waferController
 	);
 
 	%transportController(numWafers: Int) = (
