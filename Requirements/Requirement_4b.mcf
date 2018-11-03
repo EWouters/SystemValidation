@@ -8,6 +8,7 @@
 
 %% and Before a Move(rO,cL,aG) action can happen a Wafer Out
 %% must happen, without a Move(rO,cO,aR) in between.
+%% NB: Might need a trace or "[true* a . !b*]<true*.b>true
 
 
 nu X(b1:Bool = true, b2:Bool = true) . (
