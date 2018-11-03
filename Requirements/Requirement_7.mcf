@@ -3,14 +3,26 @@
 % This requirement has two parts, one is that all wafers that enter must exit, the second is that it must be measured and processed before it exits. Due to the paralelism in our architecture we cannot guarantee that each wafer is processed and measured. What we can do is guarantee that the same number of enter, process and exit actions occur. In a similar way it is also not possible to guarantee that each individual wafer exits, because of our design dicision to process (not the best word) the wafers in parallel and to not give them an id.
 
 
-nu X(n:Int=0).([!(wafer_in || wafer_out || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]X(n-1) &&
-  mu Y(m:Int=n).(val(m>=0) || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(m-1)) && <true>true))
+nu X(n:Int=0).val(n>=0) && [!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]X(n-1) &&
+  mu Y(m:Int=n).(val(m==0) || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(m-1) && <true>true))
+
+%nu X(n:Int=0).([!(wafer_in || wafer_out)]X(n) && [wafer_in]X(n+1) && [wafer_out]X(n-1) &&
+%  mu Y(m:Int=n).(val(m>=0) || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(m-1)) && <true>true))
+
+%nu X(n:Int=0).([!(wafer_in || wafer_out || wafer_out)]X(n) && 
+%               [wafer_in]X(n+1) && 
+%               [wafer_out]X(n-1) &&
+%  mu Y(m:Int=n).(val(m>=0) ||
+%                 (<true>true && 
+%                  ([!(wafer_in || wafer_out)]Y(m) && 
+%                   [wafer_in]Y(m+1) && 
+%                   [wafer_out]Y(m-1)))))
 
 
 
 
-nu X(n,w:Int=0).([!(wafer_in || wafer_out || project_wafer)]X(n, w) && [wafer_in]X(n+1, w+1) && val(w>=n) && [project_wafer]X(n, w-1) && [wafer_out]X(n-1, w) &&
-  mu Y(m:Int=n, v:Int=w).(val(m>=0) && val(m>=0)  || ([!(wafer_in || wafer_out)]Y(m) && [wafer_in]Y(m+1) && [wafer_out]Y(m-1)) && <true>true))
+%nu X(n,w:Int=0).([!(wafer_in || wafer_out || project_wafer)]X(n, w) && [wafer_in]X(n+1, w+1) && val(w>=n) && [project_wafer]X(n, w-1) && [wafer_out]X(n-1, w) &&
+%  mu Y(m:Int=n, v:Int=w).(val(m>=0) && val(v>=0) && val(v>=m) || ([!(wafer_in || wafer_out)]Y(m, v) && [wafer_in]Y(m+1, v+1) && [wafer_out]Y(m-1, v)) && <true>true))
 
 
 
@@ -36,10 +48,11 @@ nu X(n,w:Int=0).([!(wafer_in || wafer_out || project_wafer)]X(n, w) && [wafer_in
 %  && <true>true))
 
 
-% Test case true : wafer_in . wafer_out . wafer_in . wafer_out
-% Test case true : wafer_in . wafer_in . wafer_out . wafer_out
-% Test case false: wafer_in . wafer_out . wafer_out
-% Test case false: wafer_in . wafer_in . wafer_out
+%wafer_in . wafer_out . wafer_in . wafer_out % Test case true
+%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
+%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
+%wafer_in . wafer_out . wafer_out % Test case false
+%wafer_in . wafer_in . wafer_out % Test case false
 
 
 % Future test cases:
