@@ -1,22 +1,3 @@
 %% "When a door opens, a wafer must go through."
 
-forall c:Chamber,r:Robot,a:Action.[true*.c_door_confirmed(cr2d(c, r), sO).(!c_move_confirmed(r, c, a))*.c_door_confirmed(cr2d(c, r), sO)]false %&& % all doors
-
-%[true*.c_door_confirmed(cr2d(cI, rT), sO).forall a:Action.(!c_move_confirmed(rT, cI, a))*.c_door_confirmed(cr2d(cI, rT), sO)]false && % dAI
-%[true*.c_door_confirmed(cr2d(cI, rI), sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(cr2d(cI, rI), sO)]false && % dLI
-
-
-
-
-%[true*.c_door_confirmed(dLI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dLI, sC)]false && % dLI
-%[true*.c_door_confirmed(dLI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dLI, sC)]false && % dLI
-%[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
-%[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
-%[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
-%[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
-%[true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO
-
-
-%r_move_confirmed(rT, cI, aR)
-%Move(rI, cI, aG)
-%c_door_confirmed(cr2d(cI, rT), sO)
+forall c:Chamber,r:Robot,a:Action.[true*.c_door_confirmed(cr2d(c, r), sO).(!c_move_confirmed(r, c, a))*.c_door_confirmed(cr2d(c, r), sO)]false % all doors
