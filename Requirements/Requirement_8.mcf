@@ -1,5 +1,4 @@
 %% "When a door opens, a wafer must go through."
 
-forall d:Door . ([true*.door_set(d, sO)] 
-  mu X . ([!move_confirmed] X
-  && <true>true))
+[true*.c_door_confirmed(dAI, sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(dAI, sC)]false && % dAI
+[true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO

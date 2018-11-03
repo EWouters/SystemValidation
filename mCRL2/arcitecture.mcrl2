@@ -112,17 +112,17 @@ act
 
 	% communication actions (s = send, r = receive, c = communicate)
 	s_door_request, r_door_request, c_door_request: Door # DoorState;
-	s_door_confirmed, r_door_confirmed, c_door_confirmed: Door;
+	s_door_confirmed, r_door_confirmed, c_door_confirmed: Door # DoorState;
 	s_door_status, r_door_status, c_door_status: Door # DoorState;
 	s_door_locked, r_door_locked, c_door_locked: Door # Bool;
 	s_door_lock, r_door_lock, c_door_lock: Door # Bool;
 
 	s_pressure_request, r_pressure_request, c_pressure_request: Chamber # Pressure;
-	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber;
+	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber # Pressure;
 	s_pressure_status, r_pressure_status, c_pressure_status: Chamber # Pressure;
 
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
-	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot;
+	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot # Chamber # Action;
 
 	%s_pressure_status, r_pressure_status, c_pressure_status: Chamber # Pressure;
 
@@ -138,7 +138,7 @@ proc
 			r_pressure_status(c, ps)
 			. ((ps != p) ->
 				s_pressure_request(c, p)
-				. r_pressure_confirmed(c)
+				. r_pressure_confirmed(c, p)
 			<>
 				nop3
 			)
@@ -156,7 +156,7 @@ proc
 		(
 			r_pressure_request(c, p)
 			. ((p == status) -> % if p == pstate -> confirm
-					s_pressure_confirmed(c)
+					s_pressure_confirmed(c, p)
 					. pressureController()
 			<>
 %				sum d:Door.
@@ -184,7 +184,7 @@ proc
 						Set_Door(dH , sC)
 					)
 				)
-				. s_pressure_confirmed(c)
+				. s_pressure_confirmed(c, p)
 				. pressureController(c, p)
 			)
 		)
@@ -200,7 +200,7 @@ proc
 	);
 	
 	
-	%askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status(c, p) . ((d2p(d) != p) -> s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c) <> nop )));
+	%askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status(c, p) . ((d2p(d) != p) -> s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c, p) <> nop )));
 	%askSetPressure(d:Door, c:Chamber) = Set_Pressure(c, d2p(d)) . s_pressure_lock(c, false);
 	
 	%askCloseDoor(d:Door) = r_door_status(d, sO) . Set_Door(d, sC) + r_door_status(d, sC) . s_door_lock(d, true);
@@ -222,7 +222,7 @@ proc
 			<>
 				s_door_lock(d, true)
 				. s_door_request(d, ds)
-				. r_door_confirmed(d)
+				. r_door_confirmed(d, ds)
 			)
 		)
 	);
@@ -246,12 +246,12 @@ proc
 				(
 					r_door_status(d, ds)
 					. ((ds == s) -> % The door is in the requested state
-						s_door_confirmed(d)
+						s_door_confirmed(d, s)
 						. doorController(d, locked)
 					<>
 						((ds == sO) -> % The door is open and must be closed
 							s_door_set(d, s)
-							. s_door_confirmed(d)
+							. s_door_confirmed(d, s)
 							. doorController(d, locked)
 						<> % The door is closed and must be opened
 							(
@@ -279,7 +279,7 @@ proc
 								)
 							)
 							. s_door_set(d, s)
-							. s_door_confirmed(d)
+							. s_door_confirmed(d, s)
 							% Wait here for robot confirmed ???
 							. doorController(d, locked)
 						)
@@ -300,7 +300,7 @@ proc
 				Move()
 			<>
 				s_move_request(r, c, a)
-				. r_move_confirmed(r)
+				. r_move_confirmed(r, c, a)
 			)
 		)
 	);
@@ -322,7 +322,7 @@ proc
 				r_move_request(r, c, a)
 				% Open the required door for the robot
 				. Set_Door(cr2d(c, r), sO)
-				. s_move_confirmed(r)
+				. s_move_confirmed(r, c, a)
 				. s_door_lock(cr2d(c, r), false)
 				. robotController(r, a)
 			)
@@ -357,14 +357,14 @@ proc
 	waferController = (
 		wafer_in
 		. s_move_request(rT, cI, aR)
-		. r_move_confirmed(rT)
+		. r_move_confirmed(rT, cI, aR)
 		. s_door_lock(cr2d(cI, rT), false)
 		. Move(rI, cI, aG)
 		. Move(rI, cH, aR)
 		. Move(rO, cH, aG)
 		. Move(rO, cO, aR)
 		. s_move_request(rT, cO, aG)
-		. r_move_confirmed(rT)
+		. r_move_confirmed(rT, cO, aG)
 		. s_door_lock(cr2d(cO, rT), false)
 		. wafer_out
 %		. waferController
