@@ -1,6 +1,37 @@
 %% "Robots cannot be instructed to push a wafer through a closed door."
 
 %% NB: Can also be interpreted as:
-%% "Between a robot_move and a door_close, the door_open action must happen."
+%% "Between a robot_move and a door_open, the door_close action must not happen."
 
-[true* . robot_move . !door_close* . door_open]false
+
+
+% A robot move can only happen after a door open has happened
+[(!c_door_confirmed(dAI, sO))*.c_move_confirmed(rT, cI, aR)]false &&
+% Between a door_close and a robot_move a door_open must happen
+[true* . c_door_confirmed(dAI, sC) . (!c_door_confirmed(dAI, sO))* . c_move_confirmed(rT, cI, aR)]false
+
+
+
+
+
+
+
+
+%[true* . robot_move . !door_close* . door_open]false
+
+
+
+%not robot move or door open . robot move
+
+%[(!(robot_move || door_open)*. door_open . robot_move]
+
+%[(!door_open)*.robot_move]false % A robot move can only happen after a door open has happened
+%&& [true* . door_close . !door_open* . robot_move]false % Between a door_close and a robot_move a door_open must happen
+
+
+
+
+
+
+
+%&& [door_open.(!door_close)*]<robot_move>true
