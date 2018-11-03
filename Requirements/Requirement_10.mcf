@@ -3,35 +3,8 @@
 %% NB: Can also be interpreted as:
 %% "Between a robot_move and a door_open, the door_close action must not happen."
 
-
-
+forall c:Chamber,r:Robot,a:Action.
 % A robot move can only happen after a door open has happened
-[(!c_door_confirmed(dAI, sO))*.c_move_confirmed(rT, cI, aR)]false &&
+[(!c_door_confirmed(cr2d(c, r), sO))*.c_move_confirmed(r, c, a)]false &&
 % Between a door_close and a robot_move a door_open must happen
-[true* . c_door_confirmed(dAI, sC) . (!c_door_confirmed(dAI, sO))* . c_move_confirmed(rT, cI, aR)]false
-
-
-
-
-
-
-
-
-%[true* . robot_move . !door_close* . door_open]false
-
-
-
-%not robot move or door open . robot move
-
-%[(!(robot_move || door_open)*. door_open . robot_move]
-
-%[(!door_open)*.robot_move]false % A robot move can only happen after a door open has happened
-%&& [true* . door_close . !door_open* . robot_move]false % Between a door_close and a robot_move a door_open must happen
-
-
-
-
-
-
-
-%&& [door_open.(!door_close)*]<robot_move>true
+[true* . c_door_confirmed(cr2d(c, r), sC) . (!c_door_confirmed(cr2d(c, r), sO))* . c_move_confirmed(r, c, a)]false
