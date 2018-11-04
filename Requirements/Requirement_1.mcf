@@ -1,0 +1,10 @@
+%% "Any door in the wafer stepper can only open if the pressure on both sides of the door is equal."
+
+
+% Before door dAI can open c_pressure_confirmed(cAI, pA) must happen
+% c_door_confirmed(dAI, sO) is only possible after c_pressure_confirmed(cAI, pA) 
+
+
+forall d:Door.[true* . (!c_door_confirmed(dAI, sO))* . c_door_confirmed(d, sO)]
+d2p(dAI)
+
