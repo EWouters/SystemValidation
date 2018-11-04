@@ -383,7 +383,7 @@ proc
 
 	transportController = (
 
-		% c_door_confirmed(dLI, sO) . c_door_confirmed(dLO, sO) . c_door_confirmed(dLI, sC) . c_door_confirmed(dLO, sC) . c_door_confirmed(dH , sO) % Test case (t)
+		c_move_confirmed(rO, cO, aR) . c_move_confirmed(rT, cO, aG) . c_move_confirmed(rO, cO, aR) % Test case
 		%wafer_in . wafer_out . wafer_in . wafer_out % Test case true
 		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
 		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true

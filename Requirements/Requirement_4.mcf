@@ -7,3 +7,10 @@
 
 
 %forall c:Chamber,r:Robot,a1,a2:Action.[true* . c_move_confirmed(r, c, a1)](a1!=a2)
+
+% Test cases:
+% c_move_confirmed(rO, cO, aR) . c_move_confirmed(rT, cO, aG) . c_move_confirmed(rO, cO, aR) % Test case true
+% c_move_confirmed(rT, cI, aR) . c_move_confirmed(rI, cI, aG) . c_move_confirmed(rT, cI, aR) % Test case true
+
+% c_move_confirmed(rT, cI, aR) . c_move_confirmed(rT, cI, aR) % Test case false
+% c_move_confirmed(rO, cO, aR) . c_move_confirmed(rO, cO, aR) % Test case false
