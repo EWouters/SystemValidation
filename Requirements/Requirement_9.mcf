@@ -1,3 +1,5 @@
-%% NB: Always true due to architecture design
+%% "Robots cannot be instructed such that they collide."
+
+% Because the multi-actiono c_move_confirmed|c_move_confirmed is not allowed, this cannot happen.
 
 true
