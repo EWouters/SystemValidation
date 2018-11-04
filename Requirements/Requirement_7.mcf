@@ -29,9 +29,16 @@
 %  && (( m && p ) -> mu Y ([!wafer_out) Y
 %  && <true>true))
 
-%wafer_in . wafer_out . wafer_in . wafer_out % Test case true
-%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
-%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
+
+% Test cases:
+%wafer_in . project_wafer . wafer_out % Test case true
+%wafer_in . project_wafer . wafer_in . project_wafer . wafer_out . wafer_out % Test case true
+%wafer_in . project_wafer . wafer_in . wafer_out . project_wafer . wafer_out % Test case true
+%wafer_in . project_wafer . wafer_out . wafer_in . project_wafer . wafer_out % Test case true
+
+%wafer_in . wafer_out . wafer_in . wafer_out % Test case false
+%wafer_in . wafer_in . wafer_out . wafer_out % Test case false
+%wafer_in . wafer_in . wafer_out . wafer_out % Test case false
 
 %wafer_in . wafer_out . wafer_out % Test case false
 %wafer_in . wafer_in . wafer_out % Test case false
@@ -40,13 +47,7 @@
 %wafer_out % Test case false
 %project_wafer % Test case false
 
-% Future test cases:
 %wafer_in . wafer_out . project_wafer . wafer_in . wafer_out % Test case false
 %wafer_in . project_wafer . wafer_out . project_wafer . wafer_in . wafer_out % Test case false
 %project_wafer . wafer_in . wafer_out % Test case false
 %wafer_in . wafer_out . project_wafer % Test case false
-
-%wafer_in . project_wafer . wafer_out % Test case true
-%wafer_in . project_wafer . wafer_in . project_wafer . wafer_out . wafer_out % Test case true
-%wafer_in . project_wafer . wafer_in . wafer_out . project_wafer . wafer_out % Test case true
-%wafer_in . project_wafer . wafer_out . wafer_in . project_wafer . wafer_out % Test case true
