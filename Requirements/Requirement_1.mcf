@@ -22,3 +22,10 @@
 %c_pressure_confirmed(cI, pA) . c_door_confirmed(dAI, sO) % Test case true
 
 %c_pressure_confirmed(cI, pL) . c_pressure_confirmed(cI, pA) . c_door_confirmed(dLI, sO) % Test case true
+%c_pressure_confirmed(cL, pA)  % Test case false
+
+%c_pressure_confirmed(cL, pH) . c_pressure_confirmed(cL, pL) . c_door_confirmed(dLI, sO)  % Test case true
+%c_pressure_confirmed(cL, pH) . c_pressure_confirmed(cL, pL) . c_door_confirmed(dLO, sO)  % Test case true
+
+%c_pressure_confirmed(cO, pH) . c_door_confirmed(dAI, sO) . c_pressure_confirmed(cI, pA) % Test case false
+%c_pressure_confirmed(cO, pH) . c_pressure_confirmed(cI, pA) . c_door_confirmed(dAI, sO) % Test case true
