@@ -1,0 +1,5 @@
+%% "In all paths eventually system_finished must happen."
+
+mu X.([!system_finished]X && <true>true)
+
+%[true*]<system_finished>true
