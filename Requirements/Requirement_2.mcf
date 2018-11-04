@@ -10,17 +10,36 @@
 % After dAO opens dLO cannot open without dAO closing in between
 [true* . c_door_confirmed(dAO, sO) . (!c_door_confirmed(dAO, sC))* . c_door_confirmed(dLO, sO)]false &&
 % After dLO opens dAO and dH cannot open without dLO closing in between
-[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
-
-% After dLI opens dAI, dAO and dH cannot open without dLI closing in between
-[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
-% After dLO opens dAI, dAO and dH cannot open without dLO closing in between
-[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
+[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
 
 
+% Test cases:
+% c_door_confirmed(dAI, sO) . c_door_confirmed(dAI, sC) . c_door_confirmed(dLI, sO) % Test case true
+% c_door_confirmed(dAI, sO) . c_door_confirmed(dLI, sO) % Test case false
+
+% c_door_confirmed(dLI, sO) . c_door_confirmed(dLI, sC) . c_door_confirmed(dAI, sO) % Test case true
+% c_door_confirmed(dLI, sO) . c_door_confirmed(dLI, sC) . c_door_confirmed(dH, sO) % Test case true
+% c_door_confirmed(dLI, sO) . c_door_confirmed(dH, sO) % Test case false
+% c_door_confirmed(dLI, sO) . c_door_confirmed(dAI, sO) % Test case false
+
+% c_door_confirmed(dAO, sO) .  c_door_confirmed(dAO, sC) . c_door_confirmed(dLO, sO) % Test case true
+% c_door_confirmed(dAO, sO) .  c_door_confirmed(dLO, sO) % Test case false
+
+% c_door_confirmed(dLO, sO) . c_door_confirmed(dLO, sC) .c_door_confirmed(dAO, sO) % Test case true
+% c_door_confirmed(dLO, sO) . c_door_confirmed(dLO, sC) .c_door_confirmed(dH, sO) % Test case true
+% c_door_confirmed(dLO, sO) . c_door_confirmed(dAO, sO) % Test case false
+% c_door_confirmed(dLO, sO) . c_door_confirmed(dH, sO) % Test case false
 
 
-%[true* . 
+
+
+%% After dLI opens dAI, dAO and dH cannot open without dLI closing in between
+%[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
+%% After dLO opens dAI, dAO and dH cannot open without dLO closing in between
+%[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
+
+
+%[true* .
 %    exist ( id1 : Nat ) . door_open( id1 ) .
 %    (exist ( id2 : Nat ) . door_close( id2 ))* .
 %    exist ( id3 : Nat ) . door_open( id3 )]false
