@@ -30,6 +30,14 @@ eqn
 	cr2d(cH, rI) = dH;
 	cr2d(cH, rO) = dH;
 
+	% For model checking:
+	cr2d(cL, rO) = dLO;
+	cr2d(cI, rO) = dLI;
+	cr2d(cL, rI) = dLI;
+	cr2d(cH, rT) = dH;
+	cr2d(cL, rT) = dLI;
+	cr2d(cO, rI) = dLO;
+
 act
 	nop;
 	nop3;
