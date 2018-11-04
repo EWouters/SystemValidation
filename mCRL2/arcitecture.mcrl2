@@ -18,7 +18,7 @@ map
 %	cs2c: Chamber # WaferStatus -> Chamber; % get the next chamber that the wafer needs to move to.
 %	c2c2r: Chamber # Chamber -> Robot; % get the robot that will move the wafer to the next chamber.
 %	c2c2a: Chamber # Chamber -> Action; % get the action for the robot that will move the wafer to the next chamber.
-	
+
 var
 	door: Door;
 
@@ -52,7 +52,7 @@ eqn
 	cr2d(cH, rI) = dH;  %
 	cr2d(cH, rO) = dH;  %
 %	cr2d(cT, rT) = dAO;
-	
+
 	cr2d(cI, rO) = dLO;
 	cr2d(cO, rI) = dLI;
 	cr2d(cH, rT) = dH;
@@ -69,7 +69,7 @@ eqn
 %	cs2c(cH, wP) = cL;
 %	cs2c(cO, wN) = cL;
 %	cs2c(cO, wP) = cT;
-%	
+%
 %	cs2c(cI, wN) = cL;
 %
 %	c2c2r(cT,cI) = rT;
@@ -78,14 +78,14 @@ eqn
 %	c2c2r(cH,cL) = rO;
 %	c2c2r(cL,cO) = rO;
 %	c2c2r(cO,cT) = rT;
-%	
+%
 %	c2c2r(cI,cT) = rT;
 %	c2c2r(cT,cO) = rO;
 %	c2c2r(cI,cH) = rI;
 %	c2c2r(cH,cI) = rI;
 %	c2c2r(cO,cH) = rO;
 %	c2c2r(cH,cO) = rO;
-%	
+%
 %	c2c2r(cT,cI) = rT;
 %	c2c2r(cO,cL) = rO;
 %
@@ -95,10 +95,10 @@ eqn
 %	c2c2a(cH,cL) = aG;
 %	c2c2a(cL,cO) = aR;
 %	c2c2a(cO,cT) = aG;
-%	
+%
 %	c2c2a(cI,cT) = aR;
 %	c2c2a(cO,cL) = aG;
-	
+
 
 act
 	nop;
@@ -146,12 +146,12 @@ proc
 			)
 		)
 	);
-	
+
 	pressureController(c:Chamber, status:Pressure) = (
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
-		
+
 		s_pressure_status(c, status) . pressureController()
 		+
 		sum p:Pressure.
@@ -167,7 +167,7 @@ proc
 %						Set_Door(d, sC)
 %					)
 %				)
-					
+
 				(
 					((c == cI) ->
 						Set_Door(dAI, sC)
@@ -193,20 +193,20 @@ proc
 	);
 
 	doorStateController(status: Door -> DoorState) = (
-		sum d: Door, s: DoorState. 
+		sum d: Door, s: DoorState.
 		(
 			s_door_status(d, status(d)) . doorStateController()
 		+
 			r_door_set(d, s) . doorStateController(status[d -> s])
 		)
 	);
-	
-	
+
+
 	%askSetPressure(d:Door, c:Chamber) = (sum p:Pressure. ( r_pressure_status(c, p) . ((d2p(d) != p) -> s_pressure_request(c, d2p(d)) . r_pressure_confirmed(c, p) <> nop )));
 	%askSetPressure(d:Door, c:Chamber) = Set_Pressure(c, d2p(d)) . s_pressure_lock(c, false);
-	
+
 	%askCloseDoor(d:Door) = r_door_status(d, sO) . Set_Door(d, sC) + r_door_status(d, sC) . s_door_lock(d, true);
-	
+
 	Set_Door(d:Door, ds:DoorState) = (
 		sum locked:Bool.
 		(
@@ -228,7 +228,7 @@ proc
 			)
 		)
 	);
-	
+
 	doorController(d:Door, locked:Bool) = (
 	%	if door is in requested state -> confirm
 	%	elseif door open -> close door, confirm
@@ -355,7 +355,7 @@ proc
 %			)
 %		)
 %	);
-	
+
 	waferController = (
 		wafer_in
 		. s_move_request(rT, cI, aR)
@@ -372,7 +372,7 @@ proc
 		. wafer_out
 %		. waferController
 	);
-	
+
 	waferController5 = (
 %		wafer_in
 		Move(rI, cI, aG)
@@ -380,22 +380,23 @@ proc
 %		. wafer_out
 		. waferController5
 	);
-	
+
 	transportController = (
-		
+
+		%c_door_confirmed(dLO, sO) . c_door_confirmed(dH, sO)
 		%wafer_in . wafer_out . wafer_in . wafer_out % Test case true
 		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
 		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
-		
+
 		%wafer_in . wafer_out . wafer_out % Test case false
 		%wafer_in . wafer_in . wafer_out % Test case false
 
 		%wafer_in % Test case false
 		%wafer_out % Test case false
 		%project_wafer % Test case false
-		
+
 		% Future test cases:
-		%wafer_in . wafer_out . project_wafer . wafer_in . wafer_out % Test case false 
+		%wafer_in . wafer_out . project_wafer . wafer_in . wafer_out % Test case false
 		%wafer_in . project_wafer . wafer_out . project_wafer . wafer_in . wafer_out % Test case false
 		%project_wafer . wafer_in . wafer_out % Test case false
 		%wafer_in . wafer_out . project_wafer % Test case false
@@ -404,7 +405,7 @@ proc
 		%wafer_in . project_wafer . wafer_in . project_wafer . wafer_out . wafer_out % Test case true
 		%wafer_in . project_wafer . wafer_in . wafer_out . project_wafer . wafer_out % Test case true
 		%wafer_in . project_wafer . wafer_out . wafer_in . project_wafer . wafer_out % Test case true
-		
+
 
 
 		%c_door_confirmed(dAI, sO) . c_door_confirmed(dAI, sC) % Test case false
@@ -439,17 +440,17 @@ hide(
 			nop3,
 			c_pressure_request,
 			c_pressure_confirmed,
-			
-			
+
+
 			%s_pressure_request,
 			%s_door_request,
-			
-			
+
+
 			c_door_request,
 			c_door_confirmed,
 			c_door_lock,
 			c_door_locked,
-			
+
 			c_move_request,
 			c_move_confirmed,
 			wafer_in,
@@ -458,7 +459,7 @@ hide(
 %			system_finished,
 
 			c_door_status,
-			
+
 			c_pressure_status,
 			%c_robot_status,
 
@@ -471,13 +472,13 @@ hide(
 				s_door_confirmed  		| r_door_confirmed 		-> c_door_confirmed,
 				s_door_lock		 		| r_door_lock			-> c_door_lock,
 				s_door_locked			| r_door_locked			-> c_door_locked,
-				
+
 				s_pressure_request  	| r_pressure_request 	-> c_pressure_request,
 				s_pressure_confirmed  	| r_pressure_confirmed 	-> c_pressure_confirmed,
-				
+
 				s_move_request 			| r_move_request		-> c_move_request,
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed,
-				
+
 				s_door_status 			| r_door_status			-> c_door_status,
 				s_pressure_status 		| r_pressure_status		-> c_pressure_status,
 				%s_robot_status 			| r_robot_status		-> c_robot_status,
