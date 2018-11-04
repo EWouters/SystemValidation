@@ -10,6 +10,35 @@ forall c:Chamber,r:Robot,a:Action.[true*.c_door_confirmed(cr2d(c, r), sO).(!c_mo
 %[true*.c_door_confirmed(dLO, sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(dLO, sC)]false && % dLO
 %[true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rT, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO
 
+
+% Test cases for individual traces:
+
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true
+% c_door_confirmed(cr2d(cO, rO), sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(cr2d(cO, rO), sO) % Test case true
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aR) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true
+
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sC) % Test case false (true)
+
+% c_door_confirmed(cr2d(cI, rI), sC) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true (false)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 % Test cases for individual traces:
 
 %c_door_confirmed(dAI, sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(dAI, sC) % Test case true
