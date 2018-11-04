@@ -3,3 +3,8 @@
 
 % After rI puts a wafer in cH, rI cannot put an other wafer in cH without rO taking the wafer from cH in between
 [true* . c_move_confirmed(rI, cH, aR) . (!c_move_confirmed(rO, cH, aG))* . c_move_confirmed(rI, cH, aR)]false
+
+% Test cases:
+% c_move_confirmed(rI, cH, aR) . c_move_confirmed(rO, cH, aG) . c_move_confirmed(rI, cH, aR)  % Test case true
+
+% c_move_confirmed(rI, cH, aR) . c_move_confirmed(rI, cH, aR)  % Test case false

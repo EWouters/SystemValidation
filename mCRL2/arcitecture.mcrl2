@@ -410,10 +410,7 @@ proc
 
 	transportController = (
 
-		% c_door_confirmed(dLI, sO) . c_door_confirmed(dLO, sO) . c_door_confirmed(dLI, sC) . c_door_confirmed(dLO, sC) . c_door_confirmed(dH , sO) % Test case (t)
-		%wafer_in . wafer_out . wafer_in . wafer_out % Test case true
-		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
-		%wafer_in . wafer_in . wafer_out . wafer_out % Test case true
+		%c_door_confirmed(dAO, sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(dAO, sC) % Test case true
 
 		%wafer_in . wafer_out . wafer_out % Test case false
 		%wafer_in . wafer_in . wafer_out % Test case false
@@ -440,7 +437,6 @@ proc
 		%%waferController || waferController || waferController || waferController %|| waferController || waferController || waferController || waferController
 		waferController
 		. system_finished
-
 	);
 
 	%transportController(numWafers: Int) = (
