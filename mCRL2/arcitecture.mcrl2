@@ -67,18 +67,18 @@ act
 
 proc
 
-	pressureController(c:Chamber, status:Pressure) = (
+	pressureController(c:Chamber, p:Pressure) = (
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
 
-		sum p:Pressure.
+		sum p':Pressure.
 		(
-			%s_pressure_status(c, status) . pressureController()
+			%s_pressure_status(c, p) . pressureController()
 			%+
-			r_pressure_request(c, p)
-			. ((p == status) -> % if p == pstate -> confirm
-					s_pressure_confirmed(c, p)
+			r_pressure_request(c, p')
+			. ((p' == p) -> % if p == pstate -> confirm
+					s_pressure_confirmed(c, p')
 					. pressureController()
 			<>
 	%			sum d:Door.
@@ -106,8 +106,8 @@ proc
 						askCloseDoor(dH )
 					)
 				)
-				. s_pressure_confirmed(c, p)
-				. pressureController(c, p)
+				. s_pressure_confirmed(c, p')
+				. pressureController(c, p')
 			)
 		)
 	);
@@ -207,10 +207,10 @@ proc
 			s_move_request(r, c, a)
 			. r_move_confirmed(r, a)
 		<>
-			sum as:Action.
+			sum a':Action.
 			(
-				r_robot_status(r, as)
-				. ((a == as) ->
+				r_robot_status(r, a')
+				. ((a == a') ->
 					askMove()
 				<>
 					%sum f:Bool.
@@ -248,50 +248,49 @@ proc
 		)
 	);
 
-	robotController(r:Robot, status:Action) = (
+	robotController(r:Robot, a:Action) = (
 	%	if robot unoccupied ->
 	%		if door open -> confirm
 	%		else -> set_door open, wait for confirmation of door, confirm move
 	%	else break wafer
-
-		sum a:Action.
+		sum a':Action.
 		(
-			s_robot_status(r, status) . robotController()
+			s_robot_status(r, a) . robotController()
 			+
 			sum c:Chamber.
 			(
-				r_move_request(r, c, a)
+				r_move_request(r, c, a')
 				% Open the required door for the robot
 				. s_door_request(cr2d(c, r), sO)
 				. r_door_confirmed(cr2d(c, r), sO)
-				. s_move_confirmed(r, a)
+				. s_move_confirmed(r, a')
 				. s_door_release(cr2d(c, r))
 				. (
-					((r == rT && c == cI && a == aR) ->
+					((r == rT && c == cI && a' == aR) ->
 						r_chamber_release(c)
 					)
 					+
-					((r == rI && c == cI && a == aG) ->
+					((r == rI && c == cI && a' == aG) ->
 						s_chamber_release(c)
 					)
 					+
-					((r == rI && c == cH && a == aR) ->
+					((r == rI && c == cH && a' == aR) ->
 						r_chamber_release(c)
 					)
 					+
-					((r == rO && c == cH && a == aG) ->
+					((r == rO && c == cH && a' == aG) ->
 						s_chamber_release(c)
 					)
 					+
-					((r == rO && c == cO && a == aR) ->
+					((r == rO && c == cO && a' == aR) ->
 						r_chamber_release(c)
 					)
 					+
-					((r == rT && c == cO && a == aG) ->
+					((r == rT && c == cO && a' == aG) ->
 						s_chamber_release(c)
 					)
 				)
-				. robotController(r, a)
+				. robotController(r, a')
 			)
 		)
 	);
@@ -310,7 +309,7 @@ proc
 	);
 
 	transportController = (
-		waferController || waferController || waferController %|| waferController %|| waferController
+		waferController %|| waferController || waferController %|| waferController %|| waferController
 	);
 
 init
