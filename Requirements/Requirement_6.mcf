@@ -1,7 +1,5 @@
 %% "There can be only two wafers at a time in the low vacuum chamber."
+%% "There can be only one wafer at a time in the high vacuum chamber."
 
-nu X (wafer_in_low : Bool = false) . ([!wafer_in || wafer_out] X(wafer_in_low)
-&& [wafer_in] X(true)
-&& [wafer_out] X(false)
-&& (!wafer_in_low => mu Y [!wafer_in] Y && <true>true)
-&& (wafer_in_low => mu Y [!wafer_out] Y && <true>true)
+% After rI puts a wafer in cH, rI cannot put an other wafer in cH without rO taking the wafer from cH in between
+[true* . c_move_confirmed(rI, cH, aR) . (!c_move_confirmed(rO, cH, aG))* . c_move_confirmed(rI, cH, aR)]false
