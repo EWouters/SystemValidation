@@ -52,7 +52,7 @@ act
 	s_pressure_confirmed, r_pressure_confirmed, c_pressure_confirmed: Chamber # Pressure;
 
 	s_move_request, r_move_request, c_move_request: Robot # Chamber # Action;
-	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot # Action;
+	s_move_confirmed, r_move_confirmed, c_move_confirmed: Robot # Chamber # Action;
 
 	s_robot_status, r_robot_status, c_robot_status: Robot # Action;
 
@@ -205,7 +205,7 @@ proc
 
 		((r == rT) ->
 			s_move_request(r, c, a)
-			. r_move_confirmed(r, a)
+			. r_move_confirmed(r, c, a)
 		<>
 			sum a':Action.
 			(
@@ -226,7 +226,7 @@ proc
 					%				nop
 					%			)
 					%			. s_move_request(r, c, a)
-					%			. r_move_confirmed(r, a)
+					%			. r_move_confirmed(r, c, a)
 					%		)
 					%	<>
 					%		((r == rI && c == cH && a == aR) ->
@@ -236,13 +236,13 @@ proc
 					%				askMove()
 					%			<>
 					%				s_move_request(r, c, a)
-					%				. r_move_confirmed(r, a)
+					%				. r_move_confirmed(r, c, a)
 					%			)
 					%		)
 					%	)
 					%)
 					s_move_request(r, c, a)
-					. r_move_confirmed(r, a)
+					. r_move_confirmed(r, c, a)
 				)
 			)
 		)
@@ -263,7 +263,7 @@ proc
 				% Open the required door for the robot
 				. s_door_request(cr2d(c, r), sO)
 				. r_door_confirmed(cr2d(c, r), sO)
-				. s_move_confirmed(r, a')
+				. s_move_confirmed(r, c, a')
 				. s_door_release(cr2d(c, r))
 				. (
 					((r == rT && c == cI && a' == aR) ->
