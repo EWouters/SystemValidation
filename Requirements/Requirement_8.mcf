@@ -20,6 +20,28 @@
 
 % Test cases for individual traces:
 
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true
+% c_door_confirmed(cr2d(cO, rO), sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(cr2d(cO, rO), sO) % Test case true
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aR) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true
+
+% c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sC) % Test case false (true)
+
+% c_door_confirmed(cr2d(cI, rI), sC) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true (false)
+
+
+
+
+
+
+
+
+
+
+
+
+
+% OLD Test cases for individual traces:
+
 %c_door_confirmed(dAI, sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(dAI, sC) % Test case true
 %c_door_confirmed(dAI, sO) . c_move_confirmed(rI, cI, aR) . c_door_confirmed(dAI, sC) % Test case true
 %c_door_confirmed(dLI, sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(dLI, sC) % Test case true
