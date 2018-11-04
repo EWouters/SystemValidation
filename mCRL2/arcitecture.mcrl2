@@ -410,13 +410,13 @@ proc
 
 	transportController = (
 
-		c_pressure_confirmed(cO, pH) . c_pressure_confirmed(cI, pA) . c_door_confirmed(dAI, sO) % Test case false
+		%c_pressure_confirmed(cO, pH) . c_pressure_confirmed(cI, pA) . c_door_confirmed(dAI, sO) % Test case false
 		%c_door_confirmed(dAO, sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(dAO, sC) % Test case true
 
 
 		%c_door_confirmed(dAI, sO) . c_door_confirmed(dAI, sC) % Test case false
 
-		%%waferController || waferController || waferController || waferController %|| waferController || waferController || waferController || waferController
+		waferController %%|| waferController || waferController || waferController %|| waferController || waferController || waferController || waferController
 		%waferController
 		%. system_finished
 	);
