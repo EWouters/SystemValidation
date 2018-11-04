@@ -110,7 +110,7 @@ act
 	wafer_in;
 	project_wafer;
 	wafer_out;
-%	system_finished;
+	system_finished;
 
 	% communication actions (s = send, r = receive, c = communicate)
 	s_door_request, r_door_request, c_door_request: Door # DoorState;
@@ -142,7 +142,7 @@ proc
 				s_pressure_request(c, p)
 				. r_pressure_confirmed(c, p)
 			<>
-				nop3
+				nop3 % Pressure is already correct
 			)
 		)
 	);
@@ -249,12 +249,12 @@ proc
 					r_door_status(d, ds)
 					. ((ds == s) -> % The door is in the requested state
 						s_door_confirmed(d, s)
-						. doorController(d, locked)
+						. doorController(d, true)
 					<>
 						((ds == sO) -> % The door is open and must be closed
 							s_door_set(d, s)
 							. s_door_confirmed(d, s)
-							. doorController(d, locked)
+							. doorController(d, true)
 						<> % The door is closed and must be opened
 							(
 								((d == dAI) ->
@@ -283,7 +283,7 @@ proc
 							. s_door_set(d, s)
 							. s_door_confirmed(d, s)
 							% Wait here for robot confirmed ???
-							. doorController(d, locked)
+							. doorController(d, true)
 						)
 					)
 				))
@@ -295,10 +295,10 @@ proc
 	);
 
 	Move(r:Robot, c:Chamber, a:Action) = (
-		sum as:Action.
+		sum a':Action.
 		(
-			r_robot_status(r, as)
-			. ((a == as) ->
+			r_robot_status(r, a')
+			. ((a == a') ->
 				Move()
 			<>
 				s_move_request(r, c, a)
@@ -307,26 +307,26 @@ proc
 		)
 	);
 
-	robotController(r:Robot, status:Action) = (
+	robotController(r:Robot, a:Action) = (
 	%	if robot unoccupied ->
 	%		if door open -> confirm
 	%		else -> set_door open, wait for confirmation of door, confirm move
 	%	else break wafer
 
-		sum a:Action.
+		s_robot_status(r, a) . robotController()
+		+
+		sum a':Action.
 		(
-			s_robot_status(r, status) . robotController()
-			+
-			%r_robot_set_request(r, a) . robotController(r, a)
+			%r_robot_set_request(r, a') . robotController(r, a')
 			%+
 			sum c:Chamber.
 			(
-				r_move_request(r, c, a)
+				r_move_request(r, c, a')
 				% Open the required door for the robot
 				. Set_Door(cr2d(c, r), sO)
-				. s_move_confirmed(r, c, a)
+				. s_move_confirmed(r, c, a')
 				. s_door_lock(cr2d(c, r), false)
-				. robotController(r, a)
+				. robotController(r, a')
 			)
 		)
 	);
@@ -360,7 +360,32 @@ proc
 		wafer_in
 		. s_move_request(rT, cI, aR)
 		. r_move_confirmed(rT, cI, aR)
-		. s_door_lock(cr2d(cI, rT), false)
+		%. s_door_lock(cr2d(cI, rT), false)
+		%. Move(rI, cI, aG)
+		 . s_move_request(rI, cI, aG)
+		 . r_move_confirmed(rI, cI, aG)
+		%. Move(rI, cH, aR)
+		 . s_move_request(rI, cH, aR)
+		 . r_move_confirmed(rI, cH, aR)
+		. project_wafer
+		%. Move(rO, cH, aG)
+		 . s_move_request(rO, cH, aG)
+		 . r_move_confirmed(rO, cH, aG)
+		%. Move(rO, cO, aR)
+		 . s_move_request(rO, cO, aR)
+		 . r_move_confirmed(rO, cO, aR)
+		. s_move_request(rT, cO, aG)
+		. r_move_confirmed(rT, cO, aG)
+		%. s_door_lock(cr2d(cO, rT), false)
+		. wafer_out
+%		. waferController
+	);
+
+	waferController2 = (
+		wafer_in
+		. s_move_request(rT, cI, aR)
+		. r_move_confirmed(rT, cI, aR)
+		%. s_door_lock(cr2d(cI, rT), false)
 		. Move(rI, cI, aG)
 		. Move(rI, cH, aR)
 		. project_wafer
@@ -368,14 +393,16 @@ proc
 		. Move(rO, cO, aR)
 		. s_move_request(rT, cO, aG)
 		. r_move_confirmed(rT, cO, aG)
-		. s_door_lock(cr2d(cO, rT), false)
+		%. s_door_lock(cr2d(cO, rT), false)
 		. wafer_out
 %		. waferController
 	);
 
 	waferController5 = (
-%		wafer_in
-		Move(rI, cI, aG)
+		wafer_in
+		. Move(rT, cI, aG)
+		. Move(rT, cI, aR)
+		. Move(rI, cI, aG)
 		. Move(rI, cH, aR)
 %		. wafer_out
 		. waferController5
@@ -383,9 +410,16 @@ proc
 
 	transportController = (
 
-		c_door_confirmed(dAO, sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(dAO, sC) % Test case true
+		c_pressure_confirmed(cI, pL) . c_pressure_confirmed(cI, pA) . c_door_confirmed(dLI, sO) % Test case false
 
-		%waferController || waferController || waferController %%|| waferController %|| waferController || waferController || waferController || waferController
+		%c_door_confirmed(dAO, sO) . c_move_confirmed(rO, cO, aR) . c_door_confirmed(dAO, sC) % Test case true
+
+
+		%c_door_confirmed(dAI, sO) . c_door_confirmed(dAI, sC) % Test case false
+
+		%%waferController || waferController || waferController || waferController %|| waferController || waferController || waferController || waferController
+		%waferController
+		%. system_finished
 	);
 
 	%transportController(numWafers: Int) = (
@@ -431,7 +465,7 @@ hide(
 			wafer_in,
 			project_wafer,
 			wafer_out,
-%			system_finished,
+			system_finished,
 
 			c_door_status,
 
