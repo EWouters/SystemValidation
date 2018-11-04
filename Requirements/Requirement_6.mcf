@@ -5,4 +5,3 @@ nu X (wafer_in_low : Bool = false) . ([!wafer_in || wafer_out] X(wafer_in_low)
 && [wafer_out] X(false)
 && (!wafer_in_low => mu Y [!wafer_in] Y && <true>true)
 && (wafer_in_low => mu Y [!wafer_out] Y && <true>true)
-
