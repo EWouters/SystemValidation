@@ -114,12 +114,12 @@ proc
 			(c == cI) -> r_pressure_request(c, pH) . invalid_pressure + 
 			
 			(c == cL) -> r_pressure_request(c, pA) . invalid_pressure + 
-			(c == cL) -> r_pressure_request(c, pL) . s_door_request(dH , sC) . r_door_confirmed(dH , sC) . s_pressure_confirmed(c, pL) . r_pressure_release(c, pL) . s_door_release(dH , sC) . pressureController(c, pL) +
-		%	(c == cL) -> r_pressure_request(c, pL) . s_door_request(dH , sC) . r_door_confirmed(dH , sC)
-		%										   . s_door_request(dLI, sC) . r_door_confirmed(dLI, sC) 
-		%										   . s_door_request(dLO, sC) . r_door_confirmed(dLO, sC) . s_pressure_confirmed(c, pL) . r_pressure_release(c, pL) . s_door_release(dH , sC)
-		%										   . 																												 s_door_release(dLI, sC)
-		%										   .																												 s_door_release(dLO, sC) . pressureController(c, pL) +
+		%	(c == cL) -> r_pressure_request(c, pL) . s_door_request(dH , sC) . r_door_confirmed(dH , sC) . s_pressure_confirmed(c, pL) . r_pressure_release(c, pL) . s_door_release(dH , sC) . pressureController(c, pL) +
+			(c == cL) -> r_pressure_request(c, pL) . s_door_request(dH , sC) . r_door_confirmed(dH , sC)
+												   . s_door_request(dLI, sC) . r_door_confirmed(dLI, sC) 
+												   . s_door_request(dLO, sC) . r_door_confirmed(dLO, sC) . s_pressure_confirmed(c, pL) . r_pressure_release(c, pL) . s_door_release(dH , sC)
+												   . 																												 s_door_release(dLI, sC)
+												   .																												 s_door_release(dLO, sC) . pressureController(c, pL) +
 			(c == cL) -> r_pressure_request(c, pH) . s_door_request(dLI, sC) . r_door_confirmed(dLI, sC) 
 												   . s_door_request(dLO, sC) . r_door_confirmed(dLO, sC) . s_pressure_confirmed(c, pH) . r_pressure_release(c, pH) . s_door_release(dLI, sC)
 												   .																												 s_door_release(dLO, sC) . pressureController(c, pH) + 

@@ -2,4 +2,5 @@
 
 % Because the multi-actiono c_move_confirmed|c_move_confirmed is not allowed, this cannot happen.
 
-true
+%[true* . c_move_confirmed(rI, cH, aR) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rO, cH, aG)]false &&
+%[true* . c_move_confirmed(rO, cH, aG) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rI, cH, aR)]false
