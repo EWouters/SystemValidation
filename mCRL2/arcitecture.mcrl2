@@ -10,6 +10,7 @@ map
 	chambersStart: Door -> Bool;
 
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
+	d2c: Door -> Chamber; % get the chamber that
 	cr2d: Chamber # Robot -> Door; % get the door that needs to open for a robot to perform any action in a chamber
 
 var
@@ -23,6 +24,12 @@ eqn
 	d2p(dLI) = pL;
 	d2p(dLO) = pL;
 	d2p(dH ) = pH;
+	
+	d2c(dAI) = cI;
+	d2c(dAO) = cO;
+	d2c(dLI) = cL;
+	d2c(dLO) = cO;
+	d2c(dH ) = cL;
 
 	cr2d(cI, rT) = dAI;
 	cr2d(cO, rT) = dAO;
@@ -50,9 +57,9 @@ act
 	invalid_pressure;
 	
 	% status messages
-	door_state:		Door # DoorState;
-	pressure_state:	Chamber # Pressure;
-	robot_state: 		Robot # Action;
+	%door_state:		Door # DoorState;
+	%pressure_state:	Chamber # Pressure;
+	%robot_state: 		Robot # Action;
 
 	% communication actions (s = send, r = receive, c = communicate)
 	s_wafer_in,  r_wafer_in;
@@ -75,30 +82,27 @@ act
 	s_move_confirmed, 		r_move_confirmed,		c_move_confirmed:	Robot # Chamber # Action;
 	
 proc
-	
 	doorController_test(d:Door) = (
 		sum ds:DoorState. r_door_request(d, ds) . s_door_confirmed(d, ds) . r_door_release(d, ds) . doorController_test()
 	);
 	
 	doorController(d:Door, ds:DoorState) = (
-		door_state(d, ds) . doorController() +
+		%door_state(d, ds) . doorController() +
 		sum ds':DoorState.(
 			r_door_request(d, ds') . (
-			(d == dAI && ds == sC && ds' == sO) -> Do_Pressure(cI, pA) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(d == dLI && ds == sC && ds' == sO) -> Do_Pressure(cL, pL) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(d == dAO && ds == sC && ds' == sO) -> Do_Pressure(cO, pA) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(d == dLO && ds == sC && ds' == sO) -> Do_Pressure(cO, pL) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(d == dH  && ds == sC && ds' == sO) -> Do_Pressure(cL, pH) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
+			(ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
 			(!(ds == sC && ds' == sO)) -> s_door_confirmed(d, ds') . r_door_release(d, ds') . doorController(d, ds') )
 
-			
-		%  (ds == sC && ds' == sO) -> sum c:Chamber.(Do_Pressure(c, d2p(d))) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			
+		%	(d == dAI && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
+		%	(d == dLI && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
+		%	(d == dAO && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
+		%	(d == dLO && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
+		%	(d == dH  && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
 		)
 	);
 	
-	Do_Pressure(c:Chamber, p:Pressure) = (
-		s_pressure_request(c, p) . r_pressure_confirmed(c, p) . s_pressure_release(c, p)
+	Do_Pressure(d:Door) = (
+		s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) . s_pressure_release(d2c(d), d2p(d))
 	);
 
 	pressureController(c:Chamber, p:Pressure) = (
@@ -109,7 +113,7 @@ proc
 	%	if p == this p -> confirm
 	%	elseif doors of this room are closed -> confirm and update pressures
 	%	else -> close doors, wait for confirmation of doors, send confirm and update pressures
-		pressure_state(c, p) . pressureController() + 
+		%pressure_state(c, p) . pressureController() + 
 
 		sum p':Pressure.(
 			(c == cI) -> r_pressure_request(c, pA) . s_door_request(dLI, sC) . r_door_confirmed(dLI, sC) . s_pressure_confirmed(c, pA) . r_pressure_release(c, pA) . s_door_release(dLI, sC) . pressureController(c, pA) +
@@ -144,7 +148,7 @@ proc
 	%		if door open -> confirm
 	%		else -> set_door open, wait for confirmation of door, confirm move
 	%	else break wafer
-		robot_state(r, a) . robotController() +
+		%robot_state(r, a) . robotController() +
 		sum a':Action, c:Chamber.(
 			(r == rT && c == cI && a' == aR) -> 
 				r_move_request(r, c, a') . s_path_request(dAI) . 
@@ -168,10 +172,7 @@ proc
 	);
 	
 	Do_Move(r:Robot, c:Chamber, a:Action) = (
-		s_door_request(cr2d(c, r), sO)
-		. r_door_confirmed(cr2d(c, r), sO)
-		. s_move_confirmed(r, c, a)
-		. s_door_release(cr2d(c, r), sO)
+		s_door_request(cr2d(c, r), sO) . r_door_confirmed(cr2d(c, r), sO) . s_door_release(cr2d(c, r), sO) . s_move_confirmed(r, c, a)
 	);
 
 	waferForwarder = (
@@ -260,7 +261,7 @@ hide(
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed
 
 			},
-			waferController(2) ||
+			waferController(1) ||
 			transportController ||
 			
 			doorController(dAI, sC) ||
