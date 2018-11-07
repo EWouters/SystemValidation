@@ -9,7 +9,8 @@
 % If the pressure in cO is pL, and it has not been set to pA subsequently, dAI cannot open
 [true* . c_pressure_confirmed(cO, pH) . (!c_pressure_confirmed(cI, pA))* . c_door_confirmed(dAI, sO)]false &&
 [true* . c_pressure_confirmed(cL, pA)]false &&
-[true* . c_pressure_confirmed(cL, pH) . (!c_pressure_confirmed(cL, pL))* . (c_door_confirmed(dLI, sO) || c_door_confirmed(dLO, sO))]false &&
+[true* . c_pressure_confirmed(cL, pH) . (!(c_pressure_confirmed(cL, pL) || c_pressure_confirmed(cI, pL)))* . c_door_confirmed(dLI, sO)]false &&
+[true* . c_pressure_confirmed(cL, pH) . (!(c_pressure_confirmed(cL, pL) || c_pressure_confirmed(cO, pL)))* . c_door_confirmed(dLO, sO)]false &&
 [true* . c_pressure_confirmed(cL, pL) . (!c_pressure_confirmed(cL, pH))* . c_door_confirmed(dH , sO)]false
 
 %forall d:Door.[true* . (!c_door_confirmed(dAI, sO))* . c_door_confirmed(d, sO)]

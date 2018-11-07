@@ -5,6 +5,7 @@
 [true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dH, sO))]false &&
 % After dLO opens dAO and dH cannot open without dLO closing in between
 [true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
+
 %% After dLI opens dAI, dAO and dH cannot open without dLI closing in between
 %[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
 %% After dLO opens dAI, dAO and dH cannot open without dLO closing in between
