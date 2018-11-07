@@ -27,7 +27,7 @@ eqn
 	
 	d2c(dAI) = cI;
 	d2c(dAO) = cO;
-	d2c(dLI) = cL;
+	d2c(dLI) = cI;
 	d2c(dLO) = cO;
 	d2c(dH ) = cL;
 
@@ -91,14 +91,7 @@ proc
 		sum ds':DoorState.(
 			r_door_request(d, ds') . (
 			(ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(!(ds == sC && ds' == sO)) -> s_door_confirmed(d, ds') . r_door_release(d, ds') . doorController(d, ds') )
-
-		%	(d == dAI && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-		%	(d == dLI && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-		%	(d == dAO && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-		%	(d == dLO && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-		%	(d == dH  && ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-		)
+			(!(ds == sC && ds' == sO)) -> s_door_confirmed(d, ds') . r_door_release(d, ds') . doorController(d, ds') ))
 	);
 	
 	Do_Pressure(d:Door) = (
