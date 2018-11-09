@@ -1,12 +1,9 @@
-%% "There can be only one wafer at a time in each sluice."
+% There can be only one wafer at a time in each sluice.
 
 % After rT puts a wafer in cI, rT cannot put an other wafer in cI without rI taking the wafer from cI in between
 [true* . c_move_confirmed(rT, cI, aR) . (!c_move_confirmed(rI, cI, aG))* . c_move_confirmed(rT, cI, aR)]false &&
 % After rO puts a wafer in cO, rO cannot put an other wafer in cO without rT taking the wafer from cO in between
 [true* . c_move_confirmed(rO, cO, aR) . (!c_move_confirmed(rT, cO, aG))* . c_move_confirmed(rO, cO, aR)]false
-
-
-%forall c:Chamber,r:Robot,a1,a2:Action.[true* . c_move_confirmed(r, c, a1)](a1!=a2)
 
 % Test cases:
 % c_move_confirmed(rO, cO, aR) . c_move_confirmed(rT, cO, aG) . c_move_confirmed(rO, cO, aR) % Test case true

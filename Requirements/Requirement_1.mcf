@@ -1,6 +1,6 @@
 % Any door in the wafer stepper can only open if the pressure on both sides of the door is equal.
 
-%No rooms will opperate at an invalid pressure (this simplifies the formulae)
+% No rooms will opperate at an invalid pressure (this simplifies the formulae)
 [true* . invalid_pressure]false &&
 
 % If the pressure in cI is pL, and it has not been set to pA subsequently, dAI cannot open
