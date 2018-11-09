@@ -92,14 +92,19 @@ proc
 	);
 	
 	Do_Pressure(d:Door) = (
-		(d != dLI && d != dLO) -> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) . s_pressure_release(d2c(d), d2p(d))
-			<> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) .
-			   s_pressure_request(cL    , pL    ) . r_pressure_confirmed(cL    , pL    ) .
-			   s_door_confirmed(d, sO) . 
-			   % Actual door open . 
-			   r_door_release(d, sO) .
-			   s_pressure_release(d2c(d), d2p(d)) .
-			   s_pressure_release(cL    , pL    )
+		(d != dLI && d != dLO) -> 
+				s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) . 
+				s_door_confirmed(d, sO) . 
+				% Actual door open . 
+				r_door_release(d, sO) .
+				s_pressure_release(d2c(d), d2p(d))
+			 <> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) .
+				s_pressure_request(cL    , pL    ) . r_pressure_confirmed(cL    , pL    ) .
+				s_door_confirmed(d, sO) . 
+				% Actual door open . 
+				r_door_release(d, sO) .
+				s_pressure_release(d2c(d), d2p(d)) .
+				s_pressure_release(cL    , pL    )
 	);
 
 	pressureController(c:Chamber, p:Pressure) = (
@@ -266,7 +271,7 @@ hide(
 			doorController(dH , sC) ||
 			
 			pressureController(cI, pA) ||
-			pressureController(cO, pL) ||
+			pressureController(cO, pA) ||
 			pressureController(cL, pL) ||
 			pressureController(cH, pH) ||
 			
