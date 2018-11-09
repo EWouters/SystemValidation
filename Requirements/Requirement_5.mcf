@@ -1,10 +1,9 @@
-%% "There can be only two wafers at a time in the low vacuum chamber."
+% There can be only two wafers at a time in the low vacuum chamber.
 
 % After rI puts a wafer in cL, rI cannot put an other wafer in cL without rI taking the wafer from cI in between
 [true* . c_move_confirmed(rI, cL, aR) . (!c_move_confirmed(rI, cL, aG))* . c_move_confirmed(rI, cL, aR)]false &&
 % After rO puts a wafer in cL, rO cannot put an other wafer in cL without rO taking the wafer from cL in between
 [true* . c_move_confirmed(rO, cL, aR) . (!c_move_confirmed(rO, cL, aG))* . c_move_confirmed(rO, cL, aR)]false
-
 
 % Test cases:
 % c_move_confirmed(rI, cL, aR) . c_move_confirmed(rI, cL, aG) . c_move_confirmed(rI, cL, aR) % Test case true

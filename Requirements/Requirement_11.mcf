@@ -1,4 +1,4 @@
-%% "In all paths eventually system_finished must happen."
+% Eventually the wafer stepper the system must always indicate that it has finished.
 
 mu X.([!system_finished]X && <true>true)
 

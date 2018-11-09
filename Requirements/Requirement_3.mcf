@@ -1,21 +1,26 @@
-%% "The low vacuum chamber can either have the door to the high vacuum chamber open or the door(s) to the sluice(s)."
+% The low vacuum chamber can either have the door to the high vacuum chamber open or the door(s) to the sluice(s).
 
+% Weakest form but sufficient:
+% After dLI opens dH  cannot open without dLI closing in between
+[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . c_door_confirmed(dH , sO)]false &&
+% After dH  opens dLI cannot open without dH  closing in between
+[true* . c_door_confirmed(dH , sO) . (!c_door_confirmed(dH , sC))* . c_door_confirmed(dLI, sO)]false &&
+% After dLO opens dH  cannot open without dLO closing in between
+[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . c_door_confirmed(dH , sO)]false &&
+% After dH  opens dLO cannot open without dH  closing in between
+[true* . c_door_confirmed(dH , sO) . (!c_door_confirmed(dH , sC))* . c_door_confirmed(dLO, sO)]false
 
+% Stronger form, also checks that the door to the ambient pressure is not opened:
 % After dLI opens dAI and dH cannot open without dLI closing in between
-[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . c_door_confirmed(dH, sO)]false &&
+%[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dH, sO))]false &&
 % After dLO opens dAO and dH cannot open without dLO closing in between
-[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . c_door_confirmed(dH, sO)]false &&
+%[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
 
-% After dLI opens dAI and dH cannot open without dLI closing in between
-[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dH, sO))]false &&
-% After dLO opens dAO and dH cannot open without dLO closing in between
-[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
-
+% Too strong, does not allow both dLI and dLO to be opened at the same time:
 % After dLI opens dAI, dAO and dH cannot open without dLI closing in between
-[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
+%[true* . c_door_confirmed(dLI, sO) . (!c_door_confirmed(dLI, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false &&
 % After dLO opens dAI, dAO and dH cannot open without dLO closing in between
-[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
-
+%[true* . c_door_confirmed(dLO, sO) . (!c_door_confirmed(dLO, sC))* . (c_door_confirmed(dAI, sO) || c_door_confirmed(dAO, sO) || c_door_confirmed(dH, sO))]false
 
 % Test cases:
 % c_door_confirmed(dLI, sO) . c_door_confirmed(dLI, sC) . c_door_confirmed(dAI, sO) % Test case true
