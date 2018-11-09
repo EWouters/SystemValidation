@@ -85,15 +85,21 @@ proc
 		%door_state(d, ds) . doorController() +
 		sum ds':DoorState.(
 			r_door_request(d, ds') . (
-			(ds == sC && ds' == sO) -> Do_Pressure(d) . s_door_confirmed(d, sO) . r_door_release(d, ds') . doorController(d, ds') + 
-			(!(ds == sC && ds' == sO)) -> s_door_confirmed(d, ds') . r_door_release(d, ds') . doorController(d, ds') ))
+			(ds == sC && ds' == sO) -> Do_Pressure(d) . doorController(d, ds') + 
+			(!(ds == sC && ds' == sO)) -> s_door_confirmed(d, ds') . 
+				% Actual door open/close . 
+				r_door_release(d, ds') . doorController(d, ds') ))
 	);
 	
 	Do_Pressure(d:Door) = (
 		(d != dLI && d != dLO) -> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) . s_pressure_release(d2c(d), d2p(d))
-			<> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d))
-			 . s_pressure_request(cL    , pL    ) . r_pressure_confirmed(cL    , pL    ) . s_pressure_release(d2c(d), d2p(d))
-			 . 																			   s_pressure_release(cL    , pL    )
+			<> s_pressure_request(d2c(d), d2p(d)) . r_pressure_confirmed(d2c(d), d2p(d)) .
+			   s_pressure_request(cL    , pL    ) . r_pressure_confirmed(cL    , pL    ) .
+			   s_door_confirmed(d, sO) . 
+			   % Actual door open . 
+			   r_door_release(d, sO) .
+			   s_pressure_release(d2c(d), d2p(d)) .
+			   s_pressure_release(cL    , pL    )
 	);
 
 	pressureController(c:Chamber, p:Pressure) = (
@@ -162,7 +168,9 @@ proc
 	);
 	
 	Do_Move(r:Robot, c:Chamber, a:Action) = (
-		s_door_request(cr2d(c, r), sO) . r_door_confirmed(cr2d(c, r), sO) . s_door_release(cr2d(c, r), sO) . s_move_confirmed(r, c, a)
+		s_door_request(cr2d(c, r), sO) . r_door_confirmed(cr2d(c, r), sO) . 
+		% Actual move . 
+		s_door_release(cr2d(c, r), sO) . s_move_confirmed(r, c, a)
 	);
 	
 	waferController(n:Int) = (
@@ -170,16 +178,16 @@ proc
 	);
 	
 	waferControllerIn(n:Int) = (
-		(n > 0) -> s_wafer_in . waferControllerIn(n-1)
+		(n >  0) -> s_wafer_in . waferControllerIn(n-1)
 	);
 	
 	waferControllerOut(n:Int) = (
-		(n > 0) -> r_wafer_out . waferControllerOut(n-1) +
+		(n >  0) -> r_wafer_out . waferControllerOut(n-1) +
 		(n == 0) -> system_finished . waferControllerOut()
 	);
 
 	transportController = (
-		waferForwarder || waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
+		waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
 	);
 
 	waferForwarder = (
@@ -188,6 +196,7 @@ proc
 		s_move_request(rI, cI, aG) . r_move_confirmed(rI, cI, aG) . 
 		s_move_request(rI, cH, aR) . r_move_confirmed(rI, cH, aR) . 
 		s_door_request(dH , sC) . r_door_confirmed(dH , sC) . project_wafer . s_door_release(dH , sC) . 
+		%project_wafer . 
 		s_move_request(rO, cH, aG) . r_move_confirmed(rO, cH, aG) . 
 		s_move_request(rO, cO, aR) . r_move_confirmed(rO, cO, aR) . 
 		s_move_request(rT, cO, aG) . r_move_confirmed(rT, cO, aG) . 
@@ -247,7 +256,7 @@ hide(
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed
 
 			},
-			waferController(2) ||
+			waferController(1) ||
 			transportController ||
 			
 			doorController(dAI, sC) ||
