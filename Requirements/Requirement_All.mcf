@@ -254,10 +254,10 @@
 % We can however also require dH to close between rI releasing a wafer in cH and rO taking the wafer from cH.
 % And require dH to close between rO taking a wafer from cH and rI putting a wafer in cH.
 
-[true* . c_move_confirmed(rI, cH, aR) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rO, cH, aG)]false &&
+[true* . c_move_confirmed(rI, cH, aR) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rO, cH, aG)]false %&&
 
 % Too strong:
-[true* . c_move_confirmed(rO, cH, aG) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rI, cH, aR)]false
+%[true* . c_move_confirmed(rO, cH, aG) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rI, cH, aR)]false
 
 &&
 % #10

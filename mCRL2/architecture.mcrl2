@@ -164,19 +164,6 @@ proc
 	Do_Move(r:Robot, c:Chamber, a:Action) = (
 		s_door_request(cr2d(c, r), sO) . r_door_confirmed(cr2d(c, r), sO) . s_door_release(cr2d(c, r), sO) . s_move_confirmed(r, c, a)
 	);
-
-	waferForwarder = (
-		r_wafer_in . 
-		s_move_request(rT, cI, aR) . r_move_confirmed(rT, cI, aR) . 
-		s_move_request(rI, cI, aG) . r_move_confirmed(rI, cI, aG) . 
-		s_move_request(rI, cH, aR) . r_move_confirmed(rI, cH, aR) . 
-		s_door_request(dH , sC) . r_door_confirmed(dH , sC) . project_wafer . s_door_release(dH , sC) . 
-		s_move_request(rO, cH, aG) . r_move_confirmed(rO, cH, aG) . 
-		s_move_request(rO, cO, aR) . r_move_confirmed(rO, cO, aR) . 
-		s_move_request(rT, cO, aG) . r_move_confirmed(rT, cO, aG) . 
-		s_wafer_out . 
-		waferForwarder
-	);
 	
 	waferController(n:Int) = (
 		waferControllerIn(n) || waferControllerOut(n)
@@ -192,7 +179,20 @@ proc
 	);
 
 	transportController = (
-		waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
+		waferForwarder || waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
+	);
+
+	waferForwarder = (
+		r_wafer_in . 
+		s_move_request(rT, cI, aR) . r_move_confirmed(rT, cI, aR) . 
+		s_move_request(rI, cI, aG) . r_move_confirmed(rI, cI, aG) . 
+		s_move_request(rI, cH, aR) . r_move_confirmed(rI, cH, aR) . 
+		s_door_request(dH , sC) . r_door_confirmed(dH , sC) . project_wafer . s_door_release(dH , sC) . 
+		s_move_request(rO, cH, aG) . r_move_confirmed(rO, cH, aG) . 
+		s_move_request(rO, cO, aR) . r_move_confirmed(rO, cO, aR) . 
+		s_move_request(rT, cO, aG) . r_move_confirmed(rT, cO, aG) . 
+		s_wafer_out . 
+		waferForwarder
 	);
 
 init
@@ -247,7 +247,7 @@ hide(
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed
 
 			},
-			waferController(3) ||
+			waferController(2) ||
 			transportController ||
 			
 			doorController(dAI, sC) ||
