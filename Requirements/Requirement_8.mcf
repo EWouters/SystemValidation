@@ -50,3 +50,6 @@
 
 % c_door_confirmed(cr2d(cI, rI), sO) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sC) % Test case true
 % c_door_confirmed(cr2d(cI, rI), sC) . c_move_confirmed(rI, cI, aG) . c_door_confirmed(cr2d(cI, rI), sO) % Test case true
+
+% Hide:
+% wafer_in,project_wafer,wafer_out,system_finished,invalid_pressure,c_door_request,c_door_release,c_pressure_request,c_pressure_confirmed,c_pressure_release,c_path_request,c_path_release,c_move_request

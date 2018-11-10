@@ -11,3 +11,6 @@
 
 % c_move_confirmed(rT, cI, aR) . c_move_confirmed(rT, cI, aR) % Test case false
 % c_move_confirmed(rO, cO, aR) . c_move_confirmed(rO, cO, aR) % Test case false
+
+% Hide:
+% wafer_in,project_wafer,wafer_out,system_finished,invalid_pressure,c_door_request,c_door_confirmed,c_door_release,c_pressure_request,c_pressure_confirmed,c_pressure_release,c_path_request,c_path_release,c_move_request

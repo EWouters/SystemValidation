@@ -1,10 +1,10 @@
 sort
-	Chamber = struct cI | cO | cL | cH;
-	Pressure = struct pA | pL | pH;
-	Door = struct dAI | dAO | dLI | dLO | dH;
-	Robot = struct rI | rO | rT;
-	DoorState = struct sO | sC;
-	Action = struct aG | aR;
+	Chamber 	= struct cI | cO | cL | cH;
+	Pressure 	= struct pA | pL | pH;
+	Door 		= struct dAI| dAO| dLI| dLO| dH;
+	Robot 		= struct rI | rO | rT;
+	DoorState	= struct sO | sC;
+	Action		= struct aG | aR;
 
 map
 	d2p: Door -> Pressure; % get the required pressure for all of the chambers connected to door
@@ -212,6 +212,13 @@ proc
 init
 hide(
 	{
+		c_door_request,
+		c_door_release,
+		c_pressure_request,
+		c_pressure_release,
+		c_path_request,
+		c_path_release,
+		c_move_request,
 		nop
 	},
 	allow(
@@ -261,7 +268,7 @@ hide(
 				s_move_confirmed	  	| r_move_confirmed 		-> c_move_confirmed
 
 			},
-			waferController(1) ||
+			waferController(2) ||
 			transportController ||
 			
 			doorController(dAI, sC) ||
@@ -271,7 +278,7 @@ hide(
 			doorController(dH , sC) ||
 			
 			pressureController(cI, pA) ||
-			pressureController(cO, pA) ||
+			pressureController(cO, pL) ||
 			pressureController(cL, pL) ||
 			pressureController(cH, pH) ||
 			

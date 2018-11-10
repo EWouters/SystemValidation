@@ -19,3 +19,6 @@ forall c:Chamber,r:Robot,a:Action.
 
 % c_door_confirmed(dH , sO) . c_move_confirmed(rO, cH, aG) . c_door_confirmed(dH , sC) % Test case true
 % c_door_confirmed(dLI, sO) . c_door_confirmed(dLI, sC) . c_move_confirmed(rI, cI, aG) % Test case false
+
+% Hide:
+% wafer_in,project_wafer,wafer_out,system_finished,invalid_pressure,c_door_request,c_door_release,c_pressure_request,c_pressure_confirmed,c_pressure_release,c_path_request,c_path_release,c_move_request

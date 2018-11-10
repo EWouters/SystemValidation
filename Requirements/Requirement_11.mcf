@@ -3,3 +3,6 @@
 mu X.([!system_finished]X && <true>true)
 
 %[true*]<system_finished>true
+
+% Hide:
+% wafer_in,project_wafer,wafer_out,invalid_pressure,c_door_request,c_door_confirmed,c_door_release,c_pressure_request,c_pressure_confirmed,c_pressure_release,c_path_request,c_path_release,c_move_request,c_move_confirmed

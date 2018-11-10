@@ -8,3 +8,6 @@
 
 % Too strong:
 %[true* . c_move_confirmed(rO, cH, aG) . (!c_door_confirmed(dH , sC))* . c_move_confirmed(rI, cH, aR)]false
+
+% Hide:
+% wafer_in,project_wafer,wafer_out,system_finished,invalid_pressure,c_door_request,c_door_release,c_pressure_request,c_pressure_confirmed,c_pressure_release,c_path_request,c_path_release,c_move_request
