@@ -102,8 +102,8 @@ proc
 				s_pressure_request(cL    , pL    ) . r_pressure_confirmed(cL    , pL    ) .
 				s_door_confirmed(d, sO) . 
 				% Actual door open . 
-				r_door_release(d, sO) .
-				s_pressure_release(d2c(d), d2p(d)) .
+				r_door_release(d, sO) . 
+				s_pressure_release(d2c(d), d2p(d)) . 
 				s_pressure_release(cL    , pL    )
 	);
 
@@ -161,11 +161,11 @@ proc
 				r_move_request(r, c, a') . s_path_request(dH ) . 
 				Do_Move(r, c, a') . s_path_release(dLI) +
 			(r == rO && c == cH && a' == aG && a == aR) ->
-				r_move_request(r, c, a') . s_path_request(dLO) . 
+				r_move_request(r, c, a') . s_path_request(dAI) . s_path_request(dLO) . 	% Hack to fix deadlock
 				Do_Move(r, c, a') . s_path_release(dH ) +
 			(r == rO && c == cO && a' == aR && a == aG) ->
 				r_move_request(r, c, a') . s_path_request(dAO) . 
-				Do_Move(r, c, a') . s_path_release(dLO) +
+				Do_Move(r, c, a') . s_path_release(dLO) . s_path_release(dAI) + 		% Hack to fix deadlock
 			(r == rT && c == cO && a' == aG) ->
 				r_move_request(r, c, a') . 
 				Do_Move(r, c, a') . s_path_release(dAO)
@@ -192,7 +192,7 @@ proc
 	);
 
 	transportController = (
-		waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
+		waferForwarder || waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder %|| waferForwarder
 	);
 
 	waferForwarder = (
