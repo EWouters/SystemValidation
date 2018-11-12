@@ -4,7 +4,14 @@ forall c:Chamber,r:Robot,a:Action.
 % A robot move can only happen after a door open has happened
 [(!c_door_confirmed(cr2d(c, r), sO))*.c_move_confirmed(r, c, a)]false &&
 % Between a door_close and a robot_move a door_open must happen
-[true* . c_door_confirmed(cr2d(c, r), sC) . (!c_door_confirmed(cr2d(c, r), sO))* . c_move_confirmed(r, c, a)]false
+[true* . c_door_confirmed(cr2d(c, r), sC).(!c_door_confirmed(cr2d(c, r), sO))*.c_move_confirmed(r, c, a)]false
+
+%[true* . c_door_confirmed(cr2d(cI, rT), sC).(!c_door_confirmed(cr2d(cI, rT), sO))*.c_move_confirmed(rT, cI, aR)]false
+%[true* . c_door_confirmed(cr2d(cI, rI), sC).(!c_door_confirmed(cr2d(cI, rI), sO))*.c_move_confirmed(rI, cI, aG)]false
+%[true* . c_door_confirmed(cr2d(cH, rI), sC).(!c_door_confirmed(cr2d(cH, rI), sO))*.c_move_confirmed(rI, cH, aR)]false
+%[true* . c_door_confirmed(cr2d(cH, rO), sC).(!c_door_confirmed(cr2d(cH, rO), sO))*.c_move_confirmed(rO, cH, aG)]false
+%[true* . c_door_confirmed(cr2d(cO, rO), sC).(!c_door_confirmed(cr2d(cO, rO), sO))*.c_move_confirmed(rO, cO, aR)]false
+%[true* . c_door_confirmed(cr2d(cO, rT), sC).(!c_door_confirmed(cr2d(cO, rT), sO))*.c_move_confirmed(rT, cO, aG)]false
 
 % Test cases:
 % c_door_confirmed(dLI, sC) . c_door_confirmed(dLI, sO) . c_move_confirmed(rI, cI, aG) % Test case true

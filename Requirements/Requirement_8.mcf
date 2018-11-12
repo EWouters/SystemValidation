@@ -9,10 +9,10 @@
 %[true*.c_door_confirmed(dAO, sO).forall a:Action.(!c_move_confirmed(rT, cO, a))*.c_door_confirmed(dAO, sC)]false    % dAO
 
 % is equivalent to:
-[true*.c_door_confirmed(cr2d(cI, rT), sO).forall a:Action.(!c_move_confirmed(rT, cI, a))*.c_door_confirmed(cr2d(cI, rT), sC)]false && % dAI
-[true*.c_door_confirmed(cr2d(cI, rI), sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(cr2d(cI, rI), sC)]false && % dLI
-%[true*.c_door_confirmed(cr2d(cH, rI), sO).forall a:Action.(!c_move_confirmed(rI, cH, a))*.c_door_confirmed(cr2d(cH, rI), sC)]false && % dH, rI
-%[true*.c_door_confirmed(cr2d(cH, rO), sO).forall a:Action.(!c_move_confirmed(rO, cH, a))*.c_door_confirmed(cr2d(cH, rO), sC)]false && % dH, rO
+%[true*.c_door_confirmed(cr2d(cI, rT), sO).forall a:Action.(!c_move_confirmed(rT, cI, a))*.c_door_confirmed(cr2d(cI, rT), sC)]false && % dAI
+%[true*.c_door_confirmed(cr2d(cI, rI), sO).forall a:Action.(!c_move_confirmed(rI, cI, a))*.c_door_confirmed(cr2d(cI, rI), sC)]false && % dLI
+%%[true*.c_door_confirmed(cr2d(cH, rI), sO).forall a:Action.(!c_move_confirmed(rI, cH, a))*.c_door_confirmed(cr2d(cH, rI), sC)]false && % dH, rI
+%%[true*.c_door_confirmed(cr2d(cH, rO), sO).forall a:Action.(!c_move_confirmed(rO, cH, a))*.c_door_confirmed(cr2d(cH, rO), sC)]false && % dH, rO
 [true*.c_door_confirmed(cr2d(cH, rO), sO).forall a:Action.(!(c_move_confirmed(rI, cH, a) || c_move_confirmed(rO, cH, a) ))*.c_door_confirmed(cr2d(cH, rO), sC)]false && % dH, rI & rO
 [true*.c_door_confirmed(cr2d(cO, rO), sO).forall a:Action.(!c_move_confirmed(rO, cO, a))*.c_door_confirmed(cr2d(cO, rO), sC)]false && % dLO
 [true*.c_door_confirmed(cr2d(cO, rT), sO).forall a:Action.(!c_move_confirmed(rT, cO, a))*.c_door_confirmed(cr2d(cO, rT), sC)]false    % dAO
